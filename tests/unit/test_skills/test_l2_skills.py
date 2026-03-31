@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from fashion_agent.skills.l2_composite.clearance import clearance_workflow
 from fashion_agent.skills.l2_composite.product_launch import product_launch_workflow
 from fashion_agent.skills.l2_composite.restock import restock_workflow

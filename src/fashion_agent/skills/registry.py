@@ -26,7 +26,9 @@ class SkillRegistry:
             raise SkillNotFoundError(name)
         return self._skills[name]
 
-    def list_skills(self, level: str | None = None, tag: str | None = None) -> list[SkillDescriptor]:
+    def list_skills(
+        self, level: str | None = None, tag: str | None = None
+    ) -> list[SkillDescriptor]:
         results = list(self._skills.values())
         if level:
             results = [s for s in results if s.level == level]

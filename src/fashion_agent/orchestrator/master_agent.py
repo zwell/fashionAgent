@@ -134,7 +134,9 @@ class MasterAgent:
         return {
             "status": "completed" if all_success else "failed",
             "final_result": final,
-            "messages": [{"role": "assistant", "content": f"Task completed. Success: {all_success}"}],
+            "messages": [
+                {"role": "assistant", "content": f"Task completed. Success: {all_success}"}
+            ],
         }
 
     async def run(

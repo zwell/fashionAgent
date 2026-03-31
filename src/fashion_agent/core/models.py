@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 from datetime import date
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field
-
 
 # ── Article / SKU ──────────────────────────────────────────────
 
@@ -60,7 +59,7 @@ class Transaction(BaseModel):
 
 # ── Customer ───────────────────────────────────────────────────
 
-class ClubStatus(str, Enum):
+class ClubStatus(StrEnum):
     ACTIVE = "ACTIVE"
     PRE_CREATE = "PRE-CREATE"
     LEFT_CLUB = "LEFT CLUB"
@@ -87,7 +86,7 @@ class Supplier(BaseModel):
 
 # ── Task System ────────────────────────────────────────────────
 
-class TaskStatus(str, Enum):
+class TaskStatus(StrEnum):
     QUEUED = "queued"
     RUNNING = "running"
     WAITING_REVIEW = "waiting_review"
@@ -96,7 +95,7 @@ class TaskStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
-class TaskType(str, Enum):
+class TaskType(StrEnum):
     NEW_PRODUCT_LAUNCH = "new_product_launch"
     RESTOCK = "restock"
     CLEARANCE = "clearance"

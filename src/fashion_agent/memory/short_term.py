@@ -34,7 +34,9 @@ class ShortTermMemory:
             await self._redis.ping()
             logger.info("short_term_memory_connected", url=self._redis_url)
         except Exception as e:
-            logger.warning("redis_connection_failed", error=str(e), msg="Falling back to in-memory store")
+            logger.warning(
+                "redis_connection_failed", error=str(e), msg="in-memory fallback"
+            )
             self._redis = None
 
     async def get(self, key: str) -> Any | None:

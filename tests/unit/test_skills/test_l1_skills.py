@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from fashion_agent.skills.l1_atomic.competitor import competitor_analysis
 from fashion_agent.skills.l1_atomic.copywriting import generate_copywriting
 from fashion_agent.skills.l1_atomic.erp_inventory import erp_inventory_query

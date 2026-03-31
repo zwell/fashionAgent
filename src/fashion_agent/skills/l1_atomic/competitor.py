@@ -47,6 +47,8 @@ async def competitor_analysis(article_id: str) -> dict:
         "competitors": competitors,
         "avg_competitor_price": round(avg_competitor_price, 2),
         "market_position": (
-            "premium" if avg_competitor_price < 20 else "mid-range" if avg_competitor_price < 50 else "luxury"
+            "premium" if avg_competitor_price < 20
+            else "mid-range" if avg_competitor_price < 50
+            else "luxury"
         ),
     }

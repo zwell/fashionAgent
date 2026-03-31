@@ -37,7 +37,8 @@ class SupplyChainAgent(BaseAgent):
         # ReAct: Observe → Think → Act
         # Observe: check current inventory
         inventory = await self.invoke_skill("查询库存", article_id=article_id)
-        self.logger.info("react_observe", step="inventory_checked", result=inventory.get("any_low_stock"))
+        low = inventory.get("any_low_stock")
+        self.logger.info("react_observe", step="inventory_checked", result=low)
 
         # Think: get restock recommendation
         restock = await self.invoke_skill(
@@ -45,7 +46,8 @@ class SupplyChainAgent(BaseAgent):
             article_id=article_id,
             forecast_days=params.get("forecast_days", 30),
         )
-        self.logger.info("react_think", step="restock_analyzed", should_reorder=restock.get("recommendation", {}).get("should_reorder"))
+        should = restock.get("recommendation", {}).get("should_reorder")
+        self.logger.info("react_think", step="restock_analyzed", should_reorder=should)
 
         result = {
             "success": True,

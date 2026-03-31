@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import inspect
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
-from typing import Any, Callable, Coroutine
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -16,7 +17,7 @@ class SkillInput(BaseModel):
 class SkillOutput(BaseModel):
     """Override in concrete skills to define typed outputs."""
     success: bool = True
-    data: dict = field(default_factory=dict) if False else {}  # noqa: kept for clarity
+    data: dict = {}
     message: str = ""
 
 

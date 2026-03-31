@@ -48,7 +48,9 @@ async def restock_workflow(article_id: str, forecast_days: int = 30) -> dict:
         "should_reorder": reorder_qty > 0,
         "reorder_quantity": reorder_qty,
         "urgency": urgency,
-        "estimated_cost": round(reorder_qty * inventory_result.get("unit_cost", 0), 2) if reorder_qty else 0,
+        "estimated_cost": (
+            round(reorder_qty * inventory_result.get("unit_cost", 0), 2) if reorder_qty else 0
+        ),
         "days_of_stock_remaining": days_of_stock,
     }
 

@@ -6,13 +6,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from fashion_agent.core.config import get_settings
 from fashion_agent.core.logging import get_logger, setup_logging
 from fashion_agent.gateway.dependencies import get_master_agent, get_memory
 from fashion_agent.gateway.routes.health import router as health_router
 from fashion_agent.gateway.routes.skills import router as skills_router
 from fashion_agent.gateway.routes.tasks import router as tasks_router
-from fashion_agent.memory.manager import MemoryManager
 from fashion_agent.skills.loader import register_all_skills
 
 logger = get_logger(__name__)
@@ -41,8 +39,6 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
-    settings = get_settings()
-
     app = FastAPI(
         title="FashionAgent API",
         description="Fashion e-commerce multi-agent system powered by LangGraph",
