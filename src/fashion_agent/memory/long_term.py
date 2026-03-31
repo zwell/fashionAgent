@@ -6,11 +6,24 @@ Stores entity relationships as a knowledge graph:
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from fashion_agent.core.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+async def _port_open(host: str, port: int) -> bool:
+    try:
+        _, w = await asyncio.wait_for(
+            asyncio.open_connection(host, port), timeout=1
+        )
+        w.close()
+        await w.wait_closed()
+        return True
+    except Exception:
+        return False
 
 
 class LongTermMemory:
@@ -34,6 +47,15 @@ class LongTermMemory:
         self._edges: list[dict[str, Any]] = []
 
     async def connect(self) -> None:
+        host = self._uri.split("://")[-1].split(":")[0]
+        port_str = self._uri.split(":")[-1].split("/")[0]
+        port = int(port_str) if port_str.isdigit() else 7687
+
+        if not await _port_open(host, port):
+            logger.warning(
+                "neo4j_unavailable", error="port closed", msg="in-memory fallback"
+            )
+            return
         try:
             from neo4j import AsyncGraphDatabase
 
@@ -41,13 +63,19 @@ class LongTermMemory:
                 self._uri, auth=(self._user, self._password)
             )
             async with self._driver.session() as session:
-                await session.run("RETURN 1")
+                await asyncio.wait_for(session.run("RETURN 1"), timeout=5)
             logger.info("neo4j_connected", uri=self._uri)
         except Exception as e:
-            logger.warning("neo4j_unavailable", error=str(e), msg="in-memory fallback")
+            logger.warning(
+                "neo4j_unavailable", error=str(e), msg="in-memory fallback"
+            )
+            if self._driver:
+                await self._driver.close()
             self._driver = None
 
-    async def add_node(self, node_id: str, label: str, properties: dict | None = None) -> None:
+    async def add_node(
+        self, node_id: str, label: str, properties: dict | None = None
+    ) -> None:
         self._nodes[node_id] = {
             "id": node_id,
             "label": label,
@@ -76,32 +104,25 @@ class LongTermMemory:
     ) -> list[dict[str, Any]]:
         results = []
         for edge in self._edges:
-            if edge["from"] == node_id:
-                if relation is None or edge["relation"] == relation:
-                    target = self._nodes.get(edge["to"])
-                    if target:
-                        results.append({
-                            "node": target,
-                            "relation": edge["relation"],
-                            "edge_props": {
-                                k: v
-                                for k, v in edge.items()
-                                if k not in ("from", "to", "relation")
-                            },
-                        })
-            elif edge["to"] == node_id:
-                if relation is None or edge["relation"] == relation:
-                    source = self._nodes.get(edge["from"])
-                    if source:
-                        results.append({
-                            "node": source,
-                            "relation": edge["relation"],
-                            "edge_props": {
-                                k: v
-                                for k, v in edge.items()
-                                if k not in ("from", "to", "relation")
-                            },
-                        })
+            match_from = edge["from"] == node_id
+            match_to = edge["to"] == node_id
+            if not (match_from or match_to):
+                continue
+            if relation is not None and edge["relation"] != relation:
+                continue
+
+            other_id = edge["to"] if match_from else edge["from"]
+            target = self._nodes.get(other_id)
+            if target:
+                results.append({
+                    "node": target,
+                    "relation": edge["relation"],
+                    "edge_props": {
+                        k: v
+                        for k, v in edge.items()
+                        if k not in ("from", "to", "relation")
+                    },
+                })
         return results
 
     async def get_sku_graph(self, article_id: str) -> dict:

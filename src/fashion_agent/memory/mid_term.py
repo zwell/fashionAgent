@@ -7,6 +7,7 @@ over an in-memory dict so the system works without external dependencies.
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import math
 from typing import Any
@@ -35,6 +36,19 @@ def _cosine_similarity(a: list[float], b: list[float]) -> float:
     return dot / (na * nb)
 
 
+async def _port_open(host: str, port: int) -> bool:
+    """Quick TCP check — avoids long gRPC timeouts when service is down."""
+    try:
+        _, w = await asyncio.wait_for(
+            asyncio.open_connection(host, port), timeout=1
+        )
+        w.close()
+        await w.wait_closed()
+        return True
+    except Exception:
+        return False
+
+
 class MidTermMemory:
     """SKU vector embeddings for semantic search.
 
@@ -52,15 +66,32 @@ class MidTermMemory:
         self._fallback: dict[str, dict[str, Any]] = {}
 
     async def connect(self) -> None:
+        if not await _port_open(self._host, self._port):
+            logger.warning(
+                "milvus_unavailable", error="port closed", msg="in-memory fallback"
+            )
+            return
         try:
             from pymilvus import MilvusClient
 
             uri = f"http://{self._host}:{self._port}"
-            self._milvus = MilvusClient(uri=uri)
-            self._milvus.list_collections()
+            loop = asyncio.get_event_loop()
+            client = await asyncio.wait_for(
+                loop.run_in_executor(
+                    None, lambda: MilvusClient(uri=uri, timeout=3)
+                ),
+                timeout=5,
+            )
+            await asyncio.wait_for(
+                loop.run_in_executor(None, client.list_collections),
+                timeout=5,
+            )
+            self._milvus = client
             logger.info("milvus_connected", host=self._host, port=self._port)
         except Exception as e:
-            logger.warning("milvus_unavailable", error=str(e), msg="in-memory fallback")
+            logger.warning(
+                "milvus_unavailable", error=str(e), msg="in-memory fallback"
+            )
             self._milvus = None
 
     async def upsert_sku(
@@ -101,7 +132,11 @@ class MidTermMemory:
                     output_fields=["text"],
                 )
                 return [
-                    {"article_id": r["id"], "score": r["distance"], "text": r.get("text", "")}
+                    {
+                        "article_id": r["id"],
+                        "score": r["distance"],
+                        "text": r.get("text", ""),
+                    }
                     for r in results[0]
                 ]
             except Exception:
@@ -110,7 +145,9 @@ class MidTermMemory:
         scored = []
         for aid, rec in self._fallback.items():
             sim = _cosine_similarity(query_vec, rec["vector"])
-            scored.append({"article_id": aid, "score": round(sim, 4), "text": rec["text"]})
+            scored.append(
+                {"article_id": aid, "score": round(sim, 4), "text": rec["text"]}
+            )
         scored.sort(key=lambda x: x["score"], reverse=True)
         return scored[:top_k]
 
