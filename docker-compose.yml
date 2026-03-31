@@ -1,0 +1,38 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Phase 3: Uncomment when ready
+  # milvus:
+  #   image: milvusdb/milvus:v2.4-latest
+  #   ports:
+  #     - "19530:19530"
+  #   volumes:
+  #     - milvus_data:/var/lib/milvus
+  #   environment:
+  #     ETCD_USE_EMBED: "true"
+  #     COMMON_STORAGETYPE: local
+
+  # neo4j:
+  #   image: neo4j:5-community
+  #   ports:
+  #     - "7474:7474"
+  #     - "7687:7687"
+  #   volumes:
+  #     - neo4j_data:/data
+  #   environment:
+  #     NEO4J_AUTH: neo4j/password
+
+volumes:
+  redis_data:
+  # milvus_data:
+  # neo4j_data:

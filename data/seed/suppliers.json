@@ -1,0 +1,56 @@
+[
+  {
+    "supplier_id": "SUP-001",
+    "name": "Jiangsu Textiles Co.",
+    "region": "CN-East",
+    "specialties": ["Jersey Basic", "Knitwear"],
+    "lead_time_days": 14,
+    "min_order_quantity": 500,
+    "reliability_score": 0.95
+  },
+  {
+    "supplier_id": "SUP-002",
+    "name": "Guangzhou Fashion Manufacturing",
+    "region": "CN-South",
+    "specialties": ["Dresses Ladies", "Blouses", "Skirts"],
+    "lead_time_days": 12,
+    "min_order_quantity": 300,
+    "reliability_score": 0.92
+  },
+  {
+    "supplier_id": "SUP-003",
+    "name": "Zhejiang Denim Works",
+    "region": "CN-East",
+    "specialties": ["Trousers Denim", "Shorts"],
+    "lead_time_days": 18,
+    "min_order_quantity": 400,
+    "reliability_score": 0.88
+  },
+  {
+    "supplier_id": "SUP-004",
+    "name": "Turkish Outerwear Ltd.",
+    "region": "TR",
+    "specialties": ["Outdoor", "Suits & Tailoring"],
+    "lead_time_days": 21,
+    "min_order_quantity": 200,
+    "reliability_score": 0.90
+  },
+  {
+    "supplier_id": "SUP-005",
+    "name": "Bangladesh Garments Inc.",
+    "region": "BD",
+    "specialties": ["Jersey Fancy", "Under-, Nightwear", "Swimwear"],
+    "lead_time_days": 25,
+    "min_order_quantity": 1000,
+    "reliability_score": 0.85
+  },
+  {
+    "supplier_id": "SUP-006",
+    "name": "Italian Leather Goods",
+    "region": "IT",
+    "specialties": ["Accessories"],
+    "lead_time_days": 10,
+    "min_order_quantity": 100,
+    "reliability_score": 0.97
+  }
+]

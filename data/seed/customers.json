@@ -1,0 +1,17 @@
+[
+  {"customer_id": "C001", "age": 28, "club_member_status": "ACTIVE", "fashion_news_frequency": "Regularly"},
+  {"customer_id": "C002", "age": 35, "club_member_status": "ACTIVE", "fashion_news_frequency": "Monthly"},
+  {"customer_id": "C003", "age": 42, "club_member_status": "ACTIVE", "fashion_news_frequency": "Regularly"},
+  {"customer_id": "C004", "age": 19, "club_member_status": "PRE-CREATE", "fashion_news_frequency": "NONE"},
+  {"customer_id": "C005", "age": 31, "club_member_status": "ACTIVE", "fashion_news_frequency": "Monthly"},
+  {"customer_id": "C006", "age": 25, "club_member_status": "ACTIVE", "fashion_news_frequency": "Regularly"},
+  {"customer_id": "C007", "age": 55, "club_member_status": "ACTIVE", "fashion_news_frequency": "Monthly"},
+  {"customer_id": "C008", "age": 38, "club_member_status": "ACTIVE", "fashion_news_frequency": "Regularly"},
+  {"customer_id": "C009", "age": 22, "club_member_status": "PRE-CREATE", "fashion_news_frequency": "NONE"},
+  {"customer_id": "C010", "age": 47, "club_member_status": "ACTIVE", "fashion_news_frequency": "Monthly"},
+  {"customer_id": "C011", "age": 33, "club_member_status": "ACTIVE", "fashion_news_frequency": "Regularly"},
+  {"customer_id": "C012", "age": 29, "club_member_status": "LEFT CLUB", "fashion_news_frequency": "NONE"},
+  {"customer_id": "C013", "age": 41, "club_member_status": "ACTIVE", "fashion_news_frequency": "Monthly"},
+  {"customer_id": "C014", "age": 26, "club_member_status": "ACTIVE", "fashion_news_frequency": "Regularly"},
+  {"customer_id": "C015", "age": 60, "club_member_status": "ACTIVE", "fashion_news_frequency": "Monthly"}
+]
