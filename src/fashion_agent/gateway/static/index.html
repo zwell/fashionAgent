@@ -149,6 +149,12 @@ select { cursor: pointer; }
     <h3>技能中心</h3>
     <div class="nav-item" data-section="skills"><span class="nav-icon">🔧</span>技能列表</div>
     <div class="nav-item" data-section="skillsearch"><span class="nav-icon">🔍</span>技能搜索</div>
+    <h3>记忆系统</h3>
+    <div class="nav-item" data-section="entity"><span class="nav-icon">🧬</span>SKU 画像</div>
+    <div class="nav-item" data-section="similar"><span class="nav-icon">🔗</span>相似商品</div>
+    <div class="nav-item" data-section="graph"><span class="nav-icon">🕸️</span>知识图谱</div>
+    <div class="nav-item" data-section="reflection"><span class="nav-icon">💡</span>反思引擎</div>
+    <div class="nav-item" data-section="memstats"><span class="nav-icon">📊</span>记忆状态</div>
     <h3>数据浏览</h3>
     <div class="nav-item" data-section="articles"><span class="nav-icon">👗</span>商品目录</div>
     <div class="nav-item" data-section="inventory"><span class="nav-icon">🏪</span>库存状态</div>
@@ -427,6 +433,82 @@ select { cursor: pointer; }
             <button class="btn btn-primary" onclick="doSkillSearch()">搜索</button>
           </div>
           <div id="skillsearch-result"></div>
+        </div>
+      </div>
+
+      <!-- ===== SKU 画像 ===== -->
+      <div class="section" id="sec-entity">
+        <div class="card">
+          <div class="card-title">🧬 SKU 画像 (Entity Memory)</div>
+          <div class="card-desc">跨三层记忆的统一 SKU 档案：基础信息 + 库存 + 销售 + 供应商</div>
+          <div class="form-group" style="display:flex;gap:8px">
+            <select id="entity-article" class="article-select" style="flex:1"></select>
+            <button class="btn btn-primary" onclick="doEntityProfile()">查看画像</button>
+          </div>
+          <div id="entity-result"></div>
+        </div>
+      </div>
+
+      <!-- ===== 相似商品 ===== -->
+      <div class="section" id="sec-similar">
+        <div class="card">
+          <div class="card-title">🔗 相似商品 (向量检索)</div>
+          <div class="card-desc">基于 Milvus 向量引擎，通过语义相似度发现关联 SKU</div>
+          <div class="grid-2">
+            <div>
+              <div class="form-group">
+                <label>按商品查找相似</label>
+                <div style="display:flex;gap:8px">
+                  <select id="similar-article" class="article-select" style="flex:1"></select>
+                  <button class="btn btn-primary" onclick="doSimilarSKU()">查找</button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>按文字语义搜索</label>
+                <div style="display:flex;gap:8px">
+                  <input type="text" id="similar-query" placeholder="例: 黑色连衣裙 棉质" style="flex:1">
+                  <button class="btn btn-primary" onclick="doSemanticSearch()">搜索</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="similar-result"></div>
+        </div>
+      </div>
+
+      <!-- ===== 知识图谱 ===== -->
+      <div class="section" id="sec-graph">
+        <div class="card">
+          <div class="card-title">🕸️ 知识图谱 (Neo4j)</div>
+          <div class="card-desc">SKU 实体关系网络：品类、部门、供应商等关联关系</div>
+          <div class="form-group" style="display:flex;gap:8px">
+            <select id="graph-article" class="article-select" style="flex:1"></select>
+            <button class="btn btn-primary" onclick="doSKUGraph()">查看关系</button>
+          </div>
+          <div id="graph-result"></div>
+        </div>
+      </div>
+
+      <!-- ===== 反思引擎 ===== -->
+      <div class="section" id="sec-reflection">
+        <div class="card">
+          <div class="card-title">💡 反思引擎 (Reflection)</div>
+          <div class="card-desc">分析 Agent 每日决策，提取经验教训写入长期记忆，实现"越用越聪明"</div>
+          <div style="display:flex;gap:8px;margin-bottom:16px">
+            <button class="btn btn-primary" onclick="doReflection()">🔄 执行今日反思</button>
+            <button class="btn btn-secondary" onclick="doRecentInsights()">📋 近期洞察</button>
+          </div>
+          <div id="reflection-result"></div>
+        </div>
+      </div>
+
+      <!-- ===== 记忆状态 ===== -->
+      <div class="section" id="sec-memstats">
+        <div class="card">
+          <div class="card-title">📊 记忆系统状态</div>
+          <div class="card-desc">三层记忆架构运行状态：Redis 短期 + Milvus 中期 + Neo4j 长期</div>
+          <button class="btn btn-primary" onclick="doMemStats()" style="margin-bottom:16px">🔄 刷新状态</button>
+          <div id="memstats-result"></div>
         </div>
       </div>
 
@@ -810,6 +892,96 @@ async function doSkillSearch() {
       </div>
     `).join('') + '</div>';
   } catch {}
+}
+
+// ── Memory handlers ─────────────────────────────────────────
+async function doEntityProfile() {
+  const aid = document.getElementById('entity-article').value;
+  const d = await apiCall('GET', `/api/v1/memory/sku/${aid}/profile`, null, 'entity-result');
+  if (d && d.success && d.profile) {
+    const p = d.profile;
+    const el = document.getElementById('entity-result');
+    let h = el.innerHTML;
+    h += `<div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:16px">`;
+    h += `<div class="card"><h4>基础信息</h4><div style="font-size:13px;margin-top:8px;line-height:2">`;
+    Object.entries(p.basic_info||{}).forEach(([k,v]) => { h += `<div><strong>${k}:</strong> ${v}</div>`; });
+    h += `</div></div>`;
+    h += `<div class="card"><h4>库存</h4><div style="font-size:13px;margin-top:8px;line-height:2">`;
+    h += `<div><strong>总库存:</strong> ${p.inventory?.total_stock}</div>`;
+    h += `<div><strong>零售价:</strong> ¥${p.inventory?.retail_price}</div>`;
+    h += `<div><strong>成本:</strong> ¥${p.inventory?.unit_cost}</div>`;
+    (p.inventory?.warehouses||[]).forEach(w => {
+      h += `<div>${w.warehouse}: ${w.quantity} ${w.is_low_stock?'<span style="color:var(--red)">⚠️低</span>':''}</div>`;
+    });
+    h += `</div></div>`;
+    h += `<div class="card"><h4>销售</h4><div style="font-size:13px;margin-top:8px;line-height:2">`;
+    h += `<div><strong>总交易:</strong> ${p.sales?.total_transactions}</div>`;
+    h += `<div><strong>均价:</strong> ¥${p.sales?.average_price}</div>`;
+    Object.entries(p.sales?.channel_breakdown||{}).forEach(([k,v]) => { h += `<div>${k}: ${v}笔</div>`; });
+    h += `</div></div>`;
+    h += `<div class="card"><h4>供应商</h4><div style="font-size:13px;margin-top:8px;line-height:2">`;
+    if (p.supplier) {
+      h += `<div><strong>名称:</strong> ${p.supplier.name}</div>`;
+      h += `<div><strong>地区:</strong> ${p.supplier.region}</div>`;
+      h += `<div><strong>交期:</strong> ${p.supplier.lead_time_days}天</div>`;
+      h += `<div><strong>可靠性:</strong> ${(p.supplier.reliability*100).toFixed(0)}%</div>`;
+    } else { h += `<div style="color:var(--text2)">无关联供应商</div>`; }
+    h += `</div></div></div>`;
+    el.innerHTML = h;
+  }
+}
+
+async function doSimilarSKU() {
+  const aid = document.getElementById('similar-article').value;
+  await apiCall('GET', `/api/v1/memory/sku/${aid}/similar?top_k=5`, null, 'similar-result');
+}
+
+async function doSemanticSearch() {
+  const q = document.getElementById('similar-query').value;
+  if (!q) return;
+  await apiCall('GET', `/api/v1/memory/search?q=${encodeURIComponent(q)}&top_k=5`, null, 'similar-result');
+}
+
+async function doSKUGraph() {
+  const aid = document.getElementById('graph-article').value;
+  const d = await apiCall('GET', `/api/v1/memory/sku/${aid}/graph`, null, 'graph-result');
+  if (d && d.sku) {
+    const el = document.getElementById('graph-result');
+    let h = el.innerHTML;
+    h += `<div style="margin-top:16px"><h4 style="margin-bottom:12px">关系网络 (${d.total_connections} 条)</h4>`;
+    h += `<div style="display:flex;flex-wrap:wrap;gap:8px">`;
+    (d.relationships||[]).forEach(r => {
+      const colors = {BELONGS_TO:'var(--blue)',IN_DEPARTMENT:'var(--green)',SUPPLIED_BY:'var(--orange)',HAS_FEEDBACK:'var(--pink)'};
+      h += `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px">`;
+      h += `<span style="color:${colors[r.relation]||'var(--accent2)'}">${r.relation}</span> → `;
+      h += `<strong>${r.node?.name || r.node?.id || '?'}</strong>`;
+      h += `<span style="color:var(--text2);margin-left:4px">(${r.node?.label||''})</span></div>`;
+    });
+    h += `</div></div>`;
+    el.innerHTML = h;
+  }
+}
+
+async function doReflection() {
+  await apiCall('POST', '/api/v1/memory/reflection', null, 'reflection-result');
+}
+
+async function doRecentInsights() {
+  await apiCall('GET', '/api/v1/memory/reflection/recent?days=7', null, 'reflection-result');
+}
+
+async function doMemStats() {
+  const d = await apiCall('GET', '/api/v1/memory/stats', null, 'memstats-result');
+  if (d) {
+    const el = document.getElementById('memstats-result');
+    let h = el.innerHTML;
+    h += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:16px">`;
+    h += `<div class="card" style="text-align:center"><h4 style="color:var(--green)">L1 短期</h4><div style="font-size:13px;margin-top:8px">Redis / In-Memory<br>会话上下文, TTL 24h</div></div>`;
+    h += `<div class="card" style="text-align:center"><h4 style="color:var(--blue)">L2 中期</h4><div style="font-size:13px;margin-top:8px">${d.mid_term?.backend || '?'}<br>${d.mid_term?.vectors_stored || 0} 向量</div></div>`;
+    h += `<div class="card" style="text-align:center"><h4 style="color:var(--orange)">L3 长期</h4><div style="font-size:13px;margin-top:8px">${d.long_term?.backend || '?'}<br>${d.long_term?.total_nodes || 0} 节点 / ${d.long_term?.total_edges || 0} 边</div></div>`;
+    h += `</div>`;
+    el.innerHTML = h;
+  }
 }
 
 // ── Data tables ─────────────────────────────────────────────

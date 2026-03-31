@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from functools import lru_cache
 
+from fashion_agent.memory.entity import EntityMemory
 from fashion_agent.memory.manager import MemoryManager
+from fashion_agent.memory.reflection import ReflectionEngine
 from fashion_agent.orchestrator.master_agent import MasterAgent
 from fashion_agent.skills.registry import get_registry
 
@@ -20,3 +22,13 @@ def get_master_agent() -> MasterAgent:
         skill_registry=get_registry(),
         memory=get_memory(),
     )
+
+
+@lru_cache
+def get_entity_memory() -> EntityMemory:
+    return EntityMemory(get_memory())
+
+
+@lru_cache
+def get_reflection() -> ReflectionEngine:
+    return ReflectionEngine(get_memory())
