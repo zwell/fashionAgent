@@ -131,8 +131,9 @@ class TestTaskEndpoints:
         )
         assert r.status_code == 200
         d = r.json()
-        assert d["success"] is True
-        assert d["total_images"] >= 3
+        assert d["status"] == "completed"
+        assert d["all_success"] is True
+        assert d["results"][0]["total_images"] >= 3
 
     async def test_generic_task(self, client: AsyncClient):
         r = await client.post("/api/v1/tasks", json={

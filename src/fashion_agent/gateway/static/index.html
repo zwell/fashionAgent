@@ -607,15 +607,93 @@ async function doSOP() {
   const aid = document.getElementById('sop-article').value;
   const cat = document.getElementById('sop-category').value;
   const season = document.getElementById('sop-season').value;
-  const d = await apiCall('POST', `/api/v1/tasks/launch?article_id=${aid}&season=${season}&category=${cat}`, null, 'sop-result');
-  if (d && d.launch_checklist) {
-    document.getElementById('sop-checklist').style.display = '';
-    document.getElementById('sop-checklist-items').innerHTML = d.launch_checklist.map(c =>
-      `<div style="padding:6px 0;display:flex;align-items:center;gap:8px">
-        <span style="color:${c.done?'var(--green)':'var(--red)'}">${c.done?'✅':'⬜'}</span>
-        <span>${c.item}</span>
-      </div>`
-    ).join('');
+  const el = document.getElementById('sop-result');
+
+  // Show loading
+  el.innerHTML = `<div class="result-panel"><div class="result-header"><span>SOP 工作流执行中</span><span class="result-status loading">执行中...</span></div><div class="result-body" style="text-align:center;padding:32px"><div class="spinner"></div><p style="margin-top:12px;color:var(--text2);font-size:13px">Design → Visual + Marketing (并行) → 审核 → 聚合</p></div></div>`;
+
+  try {
+    const r = await fetch(BASE + `/api/v1/tasks/launch?article_id=${aid}&season=${season}&category=${cat}`, { method: 'POST' });
+    const d = await r.json();
+
+    if (!r.ok || d.status === 'failed') {
+      el.innerHTML = `<div class="result-panel"><div class="result-header"><span>执行结果</span><span class="result-status error">失败</span></div><div class="result-body"><pre>${JSON.stringify(d, null, 2)}</pre></div></div>`;
+      return;
+    }
+
+    // Rich rendering
+    const design = d.design || {};
+    const visuals = d.visuals || {};
+    const marketing = d.marketing || {};
+    const checklist = d.launch_checklist || [];
+    const proposal = design.proposal || {};
+    const palette = proposal.color_palette || {};
+
+    let html = `<div class="result-panel"><div class="result-header"><span>🎉 上架包已生成</span><span class="result-status success">task: ${d.task_id} · ${d.review_status}</span></div><div class="result-body" style="max-height:none">`;
+
+    // Checklist
+    html += `<div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">`;
+    checklist.forEach(c => {
+      html += `<div style="background:${c.done?'rgba(0,184,148,0.1)':'rgba(255,118,117,0.1)'};padding:8px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:6px"><span>${c.done?'✅':'⬜'}</span>${c.item}</div>`;
+    });
+    html += `</div>`;
+
+    // Design section
+    html += `<div class="card" style="margin-bottom:16px"><h4 style="margin-bottom:12px">🎨 设计提案</h4>`;
+    if (palette.options) {
+      html += `<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">`;
+      palette.options.forEach(c => { html += `<span class="tag tag-sm">${c}</span>`; });
+      html += `</div>`;
+    }
+    html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;margin-bottom:12px">`;
+    html += `<div><strong>品类:</strong> ${proposal.product_category || '-'}</div>`;
+    html += `<div><strong>季节:</strong> ${proposal.season || '-'}</div>`;
+    html += `<div><strong>主色:</strong> ${palette.primary || '-'}</div>`;
+    html += `<div><strong>辅色:</strong> ${palette.accent || '-'}</div>`;
+    html += `<div><strong>面料:</strong> ${(proposal.material||{}).primary || '-'}</div>`;
+    html += `<div><strong>版型:</strong> ${proposal.silhouette || '-'}</div>`;
+    html += `<div><strong>图案:</strong> ${proposal.pattern || '-'}</div>`;
+    html += `<div><strong>受众:</strong> ${proposal.target_audience || '-'}</div>`;
+    html += `</div>`;
+    if (design.description) {
+      html += `<div class="copy-display" style="font-size:13px">${design.description}</div>`;
+    }
+    html += `</div>`;
+
+    // Visuals section
+    html += `<div class="card" style="margin-bottom:16px"><h4 style="margin-bottom:12px">📷 视觉素材 (${visuals.total_images || 0} 张)</h4>`;
+    html += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">`;
+    (visuals.images || []).forEach(img => {
+      html += `<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden">`;
+      html += `<div style="background:var(--surface);height:120px;display:flex;align-items:center;justify-content:center;font-size:32px">`;
+      const icons = {product_shot:'📦',model_shot:'👤',lifestyle:'🌅',flat_lay:'📐',detail_closeup:'🔍'};
+      html += icons[img.type] || '🖼️';
+      html += `</div><div style="padding:8px;font-size:12px">`;
+      html += `<div style="font-weight:600;margin-bottom:4px">${img.type}</div>`;
+      html += `<div style="color:var(--text2)">质量: <span style="color:${img.quality_score>=0.9?'var(--green)':'var(--orange)'}">${(img.quality_score*100).toFixed(0)}%</span></div>`;
+      html += `<div style="color:var(--text2)">${img.dimensions.width}×${img.dimensions.height}</div>`;
+      html += `</div></div>`;
+    });
+    html += `</div></div>`;
+
+    // Marketing section
+    html += `<div class="card" style="margin-bottom:16px"><h4 style="margin-bottom:12px">✍️ 营销文案</h4>`;
+    const variants = marketing.all_variants || {};
+    const variantLabels = {product_description:'商品描述',promotion:'促销文案',social_media:'社交媒体'};
+    Object.keys(variants).forEach(key => {
+      html += `<div style="margin-bottom:12px"><div style="font-size:12px;color:var(--text2);margin-bottom:4px">${variantLabels[key]||key}</div>`;
+      html += `<div class="copy-display" style="font-size:13px">${variants[key]}</div></div>`;
+    });
+    html += `</div>`;
+
+    // Raw JSON toggle
+    html += `<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;color:var(--text2)">查看原始 JSON</summary>`;
+    html += `<pre style="font-size:11px;margin-top:8px">${JSON.stringify(d, null, 2)}</pre></details>`;
+
+    html += `</div></div>`;
+    el.innerHTML = html;
+  } catch (e) {
+    el.innerHTML = `<div class="result-panel"><div class="result-header"><span>错误</span><span class="result-status error">异常</span></div><div class="result-body"><pre>${e.message}</pre></div></div>`;
   }
 }
 
@@ -626,9 +704,12 @@ async function doDesign() {
   let url = `/api/v1/tasks/design?category=${cat}&season=${season}`;
   if (ref) url += `&article_id=${ref}`;
   const d = await apiCall('POST', url, null, 'design-result');
-  if (d && d.results && d.results[0] && d.results[0].design_description) {
-    document.getElementById('design-preview').style.display = '';
-    document.getElementById('design-text').textContent = d.results[0].design_description;
+  if (d && d.results && d.results[0]) {
+    const r = d.results[0];
+    if (r.design_description) {
+      document.getElementById('design-preview').style.display = '';
+      document.getElementById('design-text').textContent = r.design_description;
+    }
   }
 }
 

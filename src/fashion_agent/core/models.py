@@ -102,6 +102,8 @@ class TaskType(StrEnum):
     COPYWRITING = "copywriting"
     INVENTORY_CHECK = "inventory_check"
     TREND_ANALYSIS = "trend_analysis"
+    DESIGN = "design"
+    VISUAL = "visual"
     GENERAL = "general"
 
 

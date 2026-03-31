@@ -29,6 +29,8 @@ _TASK_ROUTING: dict[str, list[str]] = {
     TaskType.CLEARANCE: ["supply_chain_agent", "marketing_agent"],
     TaskType.TREND_ANALYSIS: ["data_agent"],
     TaskType.NEW_PRODUCT_LAUNCH: ["design_agent", "visual_agent", "marketing_agent"],
+    TaskType.DESIGN: ["design_agent"],
+    TaskType.VISUAL: ["visual_agent"],
     TaskType.GENERAL: ["data_agent"],
 }
 

@@ -93,13 +93,13 @@ async def design_product(
     season: str = "spring",
     article_id: str | None = None,
 ):
-    """Quick endpoint: generate a design proposal."""
+    """Quick endpoint: generate a design proposal via Design Agent."""
     master = get_master_agent()
     params: dict = {"category": category, "season": season}
     if article_id:
         params["article_id"] = article_id
     return await master.run(
-        task_type=TaskType.GENERAL.value,
+        task_type=TaskType.DESIGN.value,
         instruction=f"Design a {category} for {season}",
         params=params,
     )
@@ -110,15 +110,10 @@ async def generate_visuals(
     article_id: str,
     image_style: str = "commercial",
 ):
-    """Quick endpoint: generate product images."""
-    from fashion_agent.agents.visual_agent import VisualAgent
-    from fashion_agent.gateway.dependencies import get_memory
-    from fashion_agent.skills.registry import get_registry
-
-    agent = VisualAgent(get_registry(), get_memory())
-    result = await agent.execute(
-        task_id="direct",
+    """Quick endpoint: generate product images via Visual Agent."""
+    master = get_master_agent()
+    return await master.run(
+        task_type=TaskType.VISUAL.value,
         instruction=f"Generate visuals for {article_id}",
         params={"article_id": article_id, "image_style": image_style},
     )
-    return result
