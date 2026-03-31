@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FashionAgent Console</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #232734;
+  --border: #2e3346;
+  --text: #e4e6ed;
+  --text2: #9da3b4;
+  --accent: #6c5ce7;
+  --accent2: #a29bfe;
+  --green: #00b894;
+  --orange: #fdcb6e;
+  --red: #ff7675;
+  --blue: #74b9ff;
+  --pink: #fd79a8;
+  --radius: 12px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+/* Header */
+header { background: linear-gradient(135deg, #2d1b69, #11998e); padding: 24px 32px; display: flex; align-items: center; justify-content: space-between; }
+header h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+header h1 span { color: var(--accent2); }
+.status-badge { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--green); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* Layout */
+.container { display: flex; height: calc(100vh - 73px); }
+.sidebar { width: 260px; background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; flex-shrink: 0; }
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.content { flex: 1; overflow-y: auto; padding: 24px; }
+
+/* Sidebar */
+.sidebar h3 { padding: 16px 20px 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text2); }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; cursor: pointer; font-size: 14px; color: var(--text2); transition: all 0.15s; border-left: 3px solid transparent; }
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: var(--surface2); color: var(--accent2); border-left-color: var(--accent); }
+.nav-icon { width: 18px; text-align: center; }
+
+/* Cards */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
+.card-title { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+.card-desc { font-size: 13px; color: var(--text2); margin-bottom: 20px; }
+
+/* Form elements */
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13px; font-weight: 500; color: var(--text2); margin-bottom: 6px; }
+select, input[type="text"], input[type="number"] {
+  width: 100%; padding: 10px 14px; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-size: 14px; outline: none; transition: border-color 0.15s;
+}
+select:focus, input:focus { border-color: var(--accent); }
+select { cursor: pointer; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;
+  border: none; border-radius: 8px; font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: var(--accent2); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--accent); }
+
+/* Result panel */
+.result-panel { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); margin-top: 16px; overflow: hidden; }
+.result-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.result-header span { font-size: 13px; font-weight: 500; color: var(--text2); }
+.result-status { font-size: 12px; padding: 2px 10px; border-radius: 12px; }
+.result-status.success { background: rgba(0,184,148,0.15); color: var(--green); }
+.result-status.error { background: rgba(255,118,117,0.15); color: var(--red); }
+.result-status.loading { background: rgba(253,203,110,0.15); color: var(--orange); }
+.result-body { padding: 16px; max-height: 600px; overflow-y: auto; }
+.result-body pre { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+
+/* Data table */
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table th { text-align: left; padding: 10px 12px; background: var(--surface2); color: var(--text2); font-weight: 500; border-bottom: 1px solid var(--border); position: sticky; top: 0; }
+.data-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.data-table tr:hover td { background: rgba(108,92,231,0.05); }
+.table-wrap { max-height: 500px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+
+/* Tags */
+.tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; margin: 2px; }
+.tag-l1 { background: rgba(116,185,255,0.15); color: var(--blue); }
+.tag-l2 { background: rgba(253,121,168,0.15); color: var(--pink); }
+.tag-sm { background: rgba(108,92,231,0.1); color: var(--accent2); }
+
+/* Tabs */
+.tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--surface); border-radius: 8px; padding: 4px; border: 1px solid var(--border); width: fit-content; }
+.tab { padding: 8px 16px; border-radius: 6px; font-size: 13px; cursor: pointer; color: var(--text2); transition: all 0.15s; }
+.tab.active { background: var(--accent); color: white; }
+.tab:hover:not(.active) { color: var(--text); }
+
+/* Grid */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } .sidebar { display: none; } }
+
+/* Skill cards */
+.skill-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.skill-card h4 { font-size: 15px; margin-bottom: 4px; }
+.skill-card p { font-size: 12px; color: var(--text2); margin-bottom: 8px; }
+
+/* Spinner */
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent2); border-radius: 50%; animation: spin 0.6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Section hidden */
+.section { display: none; }
+.section.active { display: block; }
+
+/* Copy text display */
+.copy-display { background: var(--bg); padding: 16px; border-radius: 8px; border: 1px solid var(--border); white-space: pre-wrap; font-size: 14px; line-height: 1.8; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text2); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🧵 Fashion<span>Agent</span> Console</h1>
+  <div class="status-badge" id="statusBadge"><div class="status-dot"></div><span>Connecting...</span></div>
+</header>
+
+<div class="container">
+  <nav class="sidebar">
+    <h3>Agent 任务</h3>
+    <div class="nav-item active" data-section="copywriting"><span class="nav-icon">✍️</span>文案生成</div>
+    <div class="nav-item" data-section="restock"><span class="nav-icon">📦</span>智能补货</div>
+    <div class="nav-item" data-section="clearance"><span class="nav-icon">🏷️</span>清仓决策</div>
+    <div class="nav-item" data-section="trend"><span class="nav-icon">📈</span>趋势分析</div>
+    <div class="nav-item" data-section="launch"><span class="nav-icon">🚀</span>新品上架</div>
+    <div class="nav-item" data-section="generic"><span class="nav-icon">🎯</span>通用任务</div>
+    <h3>技能中心</h3>
+    <div class="nav-item" data-section="skills"><span class="nav-icon">🔧</span>技能列表</div>
+    <div class="nav-item" data-section="skillsearch"><span class="nav-icon">🔍</span>技能搜索</div>
+    <h3>数据浏览</h3>
+    <div class="nav-item" data-section="articles"><span class="nav-icon">👗</span>商品目录</div>
+    <div class="nav-item" data-section="inventory"><span class="nav-icon">🏪</span>库存状态</div>
+    <div class="nav-item" data-section="lowstock"><span class="nav-icon">⚠️</span>低库存预警</div>
+    <div class="nav-item" data-section="transactions"><span class="nav-icon">💳</span>交易记录</div>
+    <div class="nav-item" data-section="customers"><span class="nav-icon">👥</span>客户数据</div>
+    <div class="nav-item" data-section="suppliers"><span class="nav-icon">🏭</span>供应商</div>
+    <h3>文档</h3>
+    <div class="nav-item" data-section="apidocs"><span class="nav-icon">📖</span>API 文档</div>
+  </nav>
+
+  <div class="main">
+    <div class="content">
+
+      <!-- ===== 文案生成 ===== -->
+      <div class="section active" id="sec-copywriting">
+        <div class="card">
+          <div class="card-title">✍️ 文案生成</div>
+          <div class="card-desc">Marketing Agent (ToT) — 为商品生成多种风格的文案，选择最优输出</div>
+          <div class="grid-2">
+            <div>
+              <div class="form-group">
+                <label>选择商品</label>
+                <select id="copy-article" class="article-select"></select>
+              </div>
+              <div class="form-group">
+                <label>文案风格</label>
+                <select id="copy-style">
+                  <option value="product_description">商品描述</option>
+                  <option value="promotion">促销文案</option>
+                  <option value="social_media">社交媒体</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" onclick="doCopywriting()">🚀 生成文案</button>
+            </div>
+            <div id="copy-preview" style="display:none">
+              <label style="font-size:13px;color:var(--text2);margin-bottom:8px;display:block">生成结果</label>
+              <div class="copy-display" id="copy-text"></div>
+            </div>
+          </div>
+          <div id="copy-result"></div>
+        </div>
+      </div>
+
+      <!-- ===== 智能补货 ===== -->
+      <div class="section" id="sec-restock">
+        <div class="card">
+          <div class="card-title">📦 智能补货</div>
+          <div class="card-desc">SupplyChain Agent (ReAct) — 观察库存 → 预测需求 → 生成补货建议</div>
+          <div class="grid-2">
+            <div>
+              <div class="form-group">
+                <label>选择商品</label>
+                <select id="restock-article" class="article-select"></select>
+              </div>
+              <div class="form-group">
+                <label>预测天数</label>
+                <input type="number" id="restock-days" value="30" min="7" max="180">
+              </div>
+              <button class="btn btn-primary" onclick="doRestock()">📊 分析补货</button>
+            </div>
+          </div>
+          <div id="restock-result"></div>
+        </div>
+      </div>
+
+      <!-- ===== 清仓决策 ===== -->
+      <div class="section" id="sec-clearance">
+        <div class="card">
+          <div class="card-title">🏷️ 清仓决策</div>
+          <div class="card-desc">SupplyChain + Marketing Agent — 综合库存、竞品、销量制定清仓策略</div>
+          <div class="form-group">
+            <label>选择商品</label>
+            <select id="clearance-article" class="article-select"></select>
+          </div>
+          <button class="btn btn-primary" onclick="doClearance()">🔍 评估清仓</button>
+          <div id="clearance-result"></div>
+        </div>
+      </div>
+
+      <!-- ===== 趋势分析 ===== -->
+      <div class="section" id="sec-trend">
+        <div class="card">
+          <div class="card-title">📈 趋势分析</div>
+          <div class="card-desc">Data Agent (CoT) — 分析指定季节的时尚趋势：色彩、材质、版型、图案</div>
+          <div class="form-group">
+            <label>选择季节</label>
+            <select id="trend-season">
+              <option value="spring">🌸 春季 Spring</option>
+              <option value="summer">☀️ 夏季 Summer</option>
+              <option value="autumn">🍂 秋季 Autumn</option>
+              <option value="winter">❄️ 冬季 Winter</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="doTrend()">📊 分析趋势</button>
+          <div id="trend-result"></div>
+        </div>
+      </div>
+
+      <!-- ===== 新品上架 ===== -->
+      <div class="section" id="sec-launch">
+        <div class="card">
+          <div class="card-title">🚀 新品上架</div>
+          <div class="card-desc">Data + Marketing Agent — 趋势匹配分析 + 自动生成商品描述与社交媒体文案</div>
+          <div class="grid-2">
+            <div>
+              <div class="form-group">
+                <label>选择商品</label>
+                <select id="launch-article" class="article-select"></select>
+              </div>
+              <div class="form-group">
+                <label>上架季节</label>
+                <select id="launch-season">
+                  <option value="spring">🌸 春季</option>
+                  <option value="summer">☀️ 夏季</option>
+                  <option value="autumn">🍂 秋季</option>
+                  <option value="winter">❄️ 冬季</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" onclick="doLaunch()">🚀 启动上架</button>
+            </div>
+          </div>
+          <div id="launch-result"></div>
+        </div>
+      </div>
+
+      <!-- ===== 通用任务 ===== -->
+      <div class="section" id="sec-generic">
+        <div class="card">
+          <div class="card-title">🎯 通用任务提交</div>
+          <div class="card-desc">直接调用 Master Agent — 自由组合 task_type, instruction, params</div>
+          <div class="form-group">
+            <label>任务类型 (task_type)</label>
+            <select id="gen-type">
+              <option value="copywriting">copywriting</option>
+              <option value="restock">restock</option>
+              <option value="clearance">clearance</option>
+              <option value="trend_analysis">trend_analysis</option>
+              <option value="new_product_launch">new_product_launch</option>
+              <option value="inventory_check">inventory_check</option>
+              <option value="general">general</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>指令 (instruction)</label>
+            <input type="text" id="gen-instruction" placeholder="例: 给红色连衣裙写一段促销文案">
+          </div>
+          <div class="form-group">
+            <label>参数 (params) — JSON 格式</label>
+            <input type="text" id="gen-params" placeholder='{"article_id": "0126589003"}'>
+          </div>
+          <button class="btn btn-primary" onclick="doGeneric()">🎯 提交任务</button>
+          <div id="generic-result"></div>
+        </div>
+      </div>
+
+      <!-- ===== 技能列表 ===== -->
+      <div class="section" id="sec-skills">
+        <div class="card">
+          <div class="card-title">🔧 已注册技能</div>
+          <div class="card-desc">MCP Skills Registry — L1 原子技能 + L2 组合技能</div>
+          <div class="tabs">
+            <div class="tab active" onclick="loadSkills(null, this)">全部</div>
+            <div class="tab" onclick="loadSkills('L1', this)">L1 原子技能</div>
+            <div class="tab" onclick="loadSkills('L2', this)">L2 组合技能</div>
+          </div>
+          <div id="skills-list"></div>
+        </div>
+      </div>
+
+      <!-- ===== 技能搜索 ===== -->
+      <div class="section" id="sec-skillsearch">
+        <div class="card">
+          <div class="card-title">🔍 技能搜索</div>
+          <div class="card-desc">语义化搜索 — 通过自然语言查找技能</div>
+          <div class="form-group" style="display:flex;gap:8px">
+            <input type="text" id="skill-query" placeholder="输入关键词，如：库存、文案、补货..." style="flex:1"
+                   onkeydown="if(event.key==='Enter')doSkillSearch()">
+            <button class="btn btn-primary" onclick="doSkillSearch()">搜索</button>
+          </div>
+          <div id="skillsearch-result"></div>
+        </div>
+      </div>
+
+      <!-- ===== 商品目录 ===== -->
+      <div class="section" id="sec-articles">
+        <div class="card">
+          <div class="card-title">👗 商品目录</div>
+          <div class="card-desc">H&M 数据集种子数据 — 20 个 SKU 覆盖主要品类</div>
+          <div id="articles-table"></div>
+        </div>
+      </div>
+
+      <!-- ===== 库存状态 ===== -->
+      <div class="section" id="sec-inventory">
+        <div class="card">
+          <div class="card-title">🏪 库存状态</div>
+          <div class="card-desc">各仓库库存分布，红色标记低库存</div>
+          <div id="inventory-table"></div>
+        </div>
+      </div>
+
+      <!-- ===== 低库存预警 ===== -->
+      <div class="section" id="sec-lowstock">
+        <div class="card">
+          <div class="card-title">⚠️ 低库存预警</div>
+          <div class="card-desc">当前库存低于最低库存线的商品</div>
+          <div id="lowstock-table"></div>
+        </div>
+      </div>
+
+      <!-- ===== 交易记录 ===== -->
+      <div class="section" id="sec-transactions">
+        <div class="card">
+          <div class="card-title">💳 交易记录</div>
+          <div class="card-desc">近期交易数据</div>
+          <div id="transactions-table"></div>
+        </div>
+      </div>
+
+      <!-- ===== 客户数据 ===== -->
+      <div class="section" id="sec-customers">
+        <div class="card">
+          <div class="card-title">👥 客户数据</div>
+          <div class="card-desc">用户画像：年龄、会员状态、偏好</div>
+          <div id="customers-table"></div>
+        </div>
+      </div>
+
+      <!-- ===== 供应商 ===== -->
+      <div class="section" id="sec-suppliers">
+        <div class="card">
+          <div class="card-title">🏭 供应商</div>
+          <div class="card-desc">供应商信息与可靠性评分</div>
+          <div id="suppliers-table"></div>
+        </div>
+      </div>
+
+      <!-- ===== API 文档 ===== -->
+      <div class="section" id="sec-apidocs">
+        <div class="card">
+          <div class="card-title">📖 API 接口文档</div>
+          <div class="card-desc">完整的 REST API 参考 — 也可访问 <a href="/docs" target="_blank" style="color:var(--accent2)">/docs</a> 查看 Swagger UI</div>
+        </div>
+        <div id="apidocs-content"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const BASE = '';
+
+// ── Navigation ──────────────────────────────────────────────
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    item.classList.add('active');
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    const sec = document.getElementById('sec-' + item.dataset.section);
+    if (sec) sec.classList.add('active');
+    // Lazy-load data sections
+    const s = item.dataset.section;
+    if (s === 'articles') loadArticlesTable();
+    else if (s === 'inventory') loadInventoryTable();
+    else if (s === 'lowstock') loadLowStockTable();
+    else if (s === 'transactions') loadTransactionsTable();
+    else if (s === 'customers') loadCustomersTable();
+    else if (s === 'suppliers') loadSuppliersTable();
+    else if (s === 'skills') loadSkills(null);
+    else if (s === 'apidocs') loadApiDocs();
+  });
+});
+
+// ── Health check ────────────────────────────────────────────
+async function checkHealth() {
+  try {
+    const r = await fetch(BASE + '/health');
+    const d = await r.json();
+    const badge = document.getElementById('statusBadge');
+    badge.innerHTML = `<div class="status-dot"></div><span>v${d.version} · ${d.skills_registered} skills · Ready</span>`;
+  } catch {
+    const badge = document.getElementById('statusBadge');
+    badge.innerHTML = `<div class="status-dot" style="background:var(--red)"></div><span>Offline</span>`;
+  }
+}
+
+// ── Populate article selects ────────────────────────────────
+const ARTICLES = [
+  {id:"0108775015", name:"Strap top", color:"Black", type:"Vest top"},
+  {id:"0108775044", name:"Strap top", color:"White", type:"Vest top"},
+  {id:"0110065001", name:"OP T-shirt (Idro)", color:"Black", type:"T-shirt"},
+  {id:"0111586001", name:"Long-sleeved jersey top", color:"Dark Blue", type:"Long sleeve top"},
+  {id:"0120129001", name:"Slim fit jeans", color:"Dark Blue", type:"Trousers"},
+  {id:"0126589003", name:"Cotton dress", color:"Red", type:"Dress"},
+  {id:"0130025001", name:"Hoodie", color:"Grey", type:"Hoodie"},
+  {id:"0132172001", name:"Printed T-shirt", color:"White", type:"T-shirt"},
+  {id:"0139386001", name:"Linen-blend blazer", color:"Beige", type:"Blazer"},
+  {id:"0142702004", name:"Puffer jacket", color:"Black", type:"Jacket"},
+  {id:"0145872001", name:"Knitted sweater", color:"Pink", type:"Sweater"},
+  {id:"0150339001", name:"Chino shorts", color:"Khaki green", type:"Shorts"},
+  {id:"0156231001", name:"Pleated skirt", color:"Dark Blue", type:"Skirt"},
+  {id:"0160088001", name:"Swim trunks", color:"Blue", type:"Swimwear"},
+  {id:"0168572001", name:"Oversized wool coat", color:"Beige", type:"Coat"},
+  {id:"0172348001", name:"Lace bodysuit", color:"Black", type:"Underwear body"},
+  {id:"0176508001", name:"Kids printed hoodie", color:"Blue", type:"Hoodie"},
+  {id:"0180344001", name:"Sport leggings", color:"Black", type:"Leggings/Tights"},
+  {id:"0185100001", name:"Satin blouse", color:"Light Pink", type:"Blouse"},
+  {id:"0190112001", name:"Leather belt", color:"Brown", type:"Belt"},
+];
+
+document.querySelectorAll('.article-select').forEach(sel => {
+  ARTICLES.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.id;
+    opt.textContent = `${a.id} · ${a.name} (${a.color})`;
+    sel.appendChild(opt);
+  });
+});
+
+// ── API call helper ─────────────────────────────────────────
+function resultPanel(targetId, status, data) {
+  const el = document.getElementById(targetId);
+  const statusClass = status === 'loading' ? 'loading' : (status === 'error' ? 'error' : 'success');
+  const statusText = status === 'loading' ? '请求中...' : (status === 'error' ? '失败' : '成功');
+  const body = status === 'loading'
+    ? '<div class="spinner"></div>'
+    : `<pre>${typeof data === 'string' ? data : JSON.stringify(data, null, 2)}</pre>`;
+  el.innerHTML = `
+    <div class="result-panel">
+      <div class="result-header">
+        <span>响应结果</span>
+        <span class="result-status ${statusClass}">${statusText}</span>
+      </div>
+      <div class="result-body">${body}</div>
+    </div>`;
+}
+
+async function apiCall(method, url, body, resultId) {
+  resultPanel(resultId, 'loading');
+  try {
+    const opts = { method };
+    if (body) {
+      opts.headers = { 'Content-Type': 'application/json' };
+      opts.body = JSON.stringify(body);
+    }
+    const r = await fetch(BASE + url, opts);
+    const d = await r.json();
+    resultPanel(resultId, r.ok ? 'success' : 'error', d);
+    return d;
+  } catch (e) {
+    resultPanel(resultId, 'error', e.message);
+  }
+}
+
+// ── Task handlers ───────────────────────────────────────────
+async function doCopywriting() {
+  const aid = document.getElementById('copy-article').value;
+  const style = document.getElementById('copy-style').value;
+  const d = await apiCall('POST', `/api/v1/tasks/copywriting?article_id=${aid}&style=${style}`, null, 'copy-result');
+  if (d && d.results && d.results[0] && d.results[0].selected_copy) {
+    document.getElementById('copy-preview').style.display = '';
+    document.getElementById('copy-text').textContent = d.results[0].selected_copy;
+  }
+}
+
+async function doRestock() {
+  const aid = document.getElementById('restock-article').value;
+  const days = document.getElementById('restock-days').value;
+  await apiCall('POST', `/api/v1/tasks/restock?article_id=${aid}&forecast_days=${days}`, null, 'restock-result');
+}
+
+async function doClearance() {
+  const aid = document.getElementById('clearance-article').value;
+  await apiCall('POST', `/api/v1/tasks/clearance?article_id=${aid}`, null, 'clearance-result');
+}
+
+async function doTrend() {
+  const season = document.getElementById('trend-season').value;
+  await apiCall('POST', `/api/v1/tasks/trend?season=${season}`, null, 'trend-result');
+}
+
+async function doLaunch() {
+  const aid = document.getElementById('launch-article').value;
+  const season = document.getElementById('launch-season').value;
+  await apiCall('POST', `/api/v1/tasks/launch?article_id=${aid}&season=${season}`, null, 'launch-result');
+}
+
+async function doGeneric() {
+  const taskType = document.getElementById('gen-type').value;
+  const instruction = document.getElementById('gen-instruction').value || 'Execute task';
+  let params = {};
+  try { params = JSON.parse(document.getElementById('gen-params').value || '{}'); } catch {}
+  await apiCall('POST', '/api/v1/tasks', { task_type: taskType, instruction, params }, 'generic-result');
+}
+
+// ── Skills ──────────────────────────────────────────────────
+async function loadSkills(level, tabEl) {
+  if (tabEl) {
+    tabEl.parentElement.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tabEl.classList.add('active');
+  }
+  const url = level ? `/api/v1/skills?level=${level}` : '/api/v1/skills';
+  try {
+    const r = await fetch(BASE + url);
+    const d = await r.json();
+    const el = document.getElementById('skills-list');
+    if (!d.skills || d.skills.length === 0) {
+      el.innerHTML = '<p style="color:var(--text2)">无匹配技能</p>';
+      return;
+    }
+    el.innerHTML = '<div class="grid-2">' + d.skills.map(s => `
+      <div class="skill-card">
+        <h4>${s.name} <span class="tag ${s.level==='L1'?'tag-l1':'tag-l2'}">${s.level}</span></h4>
+        <p>${s.description}</p>
+        <div>${(s.tags||[]).map(t => `<span class="tag tag-sm">${t}</span>`).join('')}</div>
+        ${s.examples && s.examples.length ? `<div style="margin-top:8px;font-size:12px;color:var(--text2)">示例: ${s.examples[0]}</div>` : ''}
+      </div>
+    `).join('') + '</div>';
+  } catch {}
+}
+
+async function doSkillSearch() {
+  const q = document.getElementById('skill-query').value;
+  if (!q) return;
+  try {
+    const r = await fetch(BASE + `/api/v1/skills/search?q=${encodeURIComponent(q)}`);
+    const d = await r.json();
+    const el = document.getElementById('skillsearch-result');
+    if (!d.skills || d.skills.length === 0) {
+      el.innerHTML = `<p style="color:var(--text2);margin-top:12px">未找到匹配「${q}」的技能</p>`;
+      return;
+    }
+    el.innerHTML = '<div class="grid-2" style="margin-top:12px">' + d.skills.map(s => `
+      <div class="skill-card">
+        <h4>${s.name} <span class="tag ${s.level==='L1'?'tag-l1':'tag-l2'}">${s.level}</span></h4>
+        <p>${s.description}</p>
+        <div>${(s.tags||[]).map(t => `<span class="tag tag-sm">${t}</span>`).join('')}</div>
+      </div>
+    `).join('') + '</div>';
+  } catch {}
+}
+
+// ── Data tables ─────────────────────────────────────────────
+function makeTable(headers, rows) {
+  return `<div class="table-wrap"><table class="data-table"><thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+
+async function loadArticlesTable() {
+  try {
+    const r = await fetch(BASE + '/api/v1/data/articles');
+    const d = await r.json();
+    const headers = ['Article ID', '名称', '类型', '品类', '颜色', '部门', '描述'];
+    const rows = d.articles.map(a => [a.article_id, a.prod_name, a.product_type_name, a.product_group_name, a.colour_group_name, a.department_name, a.detail_desc.substring(0, 60) + '...']);
+    document.getElementById('articles-table').innerHTML = makeTable(headers, rows);
+  } catch {}
+}
+
+async function loadInventoryTable() {
+  try {
+    const r = await fetch(BASE + '/api/v1/data/inventory');
+    const d = await r.json();
+    const art = Object.fromEntries(ARTICLES.map(a => [a.id, a.name]));
+    const headers = ['Article ID', '商品', '仓库', '数量', '最低库存', '补货点', '成本', '零售价', '状态'];
+    const rows = d.records.map(i => {
+      const low = i.quantity <= i.min_stock;
+      const status = low ? '<span style="color:var(--red)">⚠️ 低库存</span>' : '<span style="color:var(--green)">✅ 正常</span>';
+      return [i.article_id, art[i.article_id]||'', i.warehouse, i.quantity, i.min_stock, i.reorder_point, '¥'+i.unit_cost, '¥'+i.retail_price, status];
+    });
+    document.getElementById('inventory-table').innerHTML = makeTable(headers, rows);
+  } catch {}
+}
+
+async function loadLowStockTable() {
+  try {
+    const r = await fetch(BASE + '/api/v1/data/inventory/low-stock');
+    const d = await r.json();
+    if (d.total === 0) {
+      document.getElementById('lowstock-table').innerHTML = '<p style="color:var(--green);margin-top:12px">✅ 所有商品库存充足</p>';
+      return;
+    }
+    const headers = ['Article ID', '商品', '仓库', '当前库存', '最低库存', '零售价'];
+    const rows = d.items.map(i => [
+      i.article.article_id, i.article.prod_name, i.inventory.warehouse,
+      `<span style="color:var(--red);font-weight:600">${i.inventory.quantity}</span>`,
+      i.inventory.min_stock, '¥'+i.inventory.retail_price
+    ]);
+    document.getElementById('lowstock-table').innerHTML = makeTable(headers, rows);
+  } catch {}
+}
+
+async function loadTransactionsTable() {
+  try {
+    const r = await fetch(BASE + '/api/v1/data/transactions');
+    const d = await r.json();
+    const art = Object.fromEntries(ARTICLES.map(a => [a.id, a.name]));
+    const headers = ['日期', '客户ID', 'Article ID', '商品', '价格', '渠道'];
+    const rows = d.transactions.map(t => [t.t_dat, t.customer_id, t.article_id, art[t.article_id]||'', '¥'+t.price, t.sales_channel_id===1?'线上':'线下']);
+    document.getElementById('transactions-table').innerHTML = makeTable(headers, rows);
+  } catch {}
+}
+
+async function loadCustomersTable() {
+  try {
+    const r = await fetch(BASE + '/api/v1/data/customers');
+    const d = await r.json();
+    const headers = ['客户ID', '年龄', '会员状态', '时尚资讯偏好'];
+    const rows = d.customers.map(c => [c.customer_id, c.age, c.club_member_status, c.fashion_news_frequency]);
+    document.getElementById('customers-table').innerHTML = makeTable(headers, rows);
+  } catch {}
+}
+
+async function loadSuppliersTable() {
+  try {
+    const r = await fetch(BASE + '/api/v1/data/suppliers');
+    const d = await r.json();
+    const headers = ['供应商ID', '名称', '地区', '专长', '交期(天)', '最小订货量', '可靠性'];
+    const rows = d.suppliers.map(s => [
+      s.supplier_id, s.name, s.region,
+      s.specialties.map(t => `<span class="tag tag-sm">${t}</span>`).join(''),
+      s.lead_time_days, s.min_order_quantity,
+      `<span style="color:${s.reliability_score>=0.9?'var(--green)':'var(--orange)'}">${(s.reliability_score*100).toFixed(0)}%</span>`
+    ]);
+    document.getElementById('suppliers-table').innerHTML = makeTable(headers, rows);
+  } catch {}
+}
+
+// ── API Docs (inline) ───────────────────────────────────────
+function loadApiDocs() {
+  const el = document.getElementById('apidocs-content');
+  el.innerHTML = `
+  <div class="card">
+    <h3 style="margin-bottom:16px">📍 基础信息</h3>
+    <table class="data-table">
+      <tr><td style="width:150px;font-weight:500">Base URL</td><td><code>http://localhost:8000</code></td></tr>
+      <tr><td style="font-weight:500">Swagger UI</td><td><a href="/docs" target="_blank" style="color:var(--accent2)">/docs</a></td></tr>
+      <tr><td style="font-weight:500">ReDoc</td><td><a href="/redoc" target="_blank" style="color:var(--accent2)">/redoc</a></td></tr>
+      <tr><td style="font-weight:500">OpenAPI JSON</td><td><a href="/openapi.json" target="_blank" style="color:var(--accent2)">/openapi.json</a></td></tr>
+    </table>
+  </div>
+  ${apiSection('GET', '/health', '健康检查', '检查系统状态和已注册技能数', null, '{"status":"healthy","version":"0.1.0","skills_registered":8}')}
+  ${apiSection('POST', '/api/v1/tasks', '提交通用任务', '通过 Master Agent 编排执行任意任务类型',
+    '{"task_type":"copywriting","instruction":"给红色连衣裙写促销文案","params":{"article_id":"0126589003"}}',
+    '{"task_id":"a1b2c3d4","status":"completed","all_success":true,"results":[...]}')}
+  ${apiSection('POST', '/api/v1/tasks/copywriting?article_id={id}&style={style}', '文案生成', 'Marketing Agent 生成商品文案（product_description / promotion / social_media）',
+    null, '{"task_id":"...","status":"completed","results":[{"agent":"marketing_agent","selected_copy":"...","all_variants":{...}}]}')}
+  ${apiSection('POST', '/api/v1/tasks/restock?article_id={id}&forecast_days={n}', '智能补货', 'SupplyChain Agent 分析库存并生成补货建议',
+    null, '{"task_id":"...","status":"completed","results":[{"agent":"supply_chain_agent","restock_recommendation":{...}}]}')}
+  ${apiSection('POST', '/api/v1/tasks/clearance?article_id={id}', '清仓决策', 'SupplyChain + Marketing Agent 综合分析制定清仓策略',
+    null, '{"task_id":"...","status":"completed","results":[{"strategy":"moderate_discount","discount_pct":0.25,...}]}')}
+  ${apiSection('POST', '/api/v1/tasks/trend?season={season}', '趋势分析', 'Data Agent 分析季节时尚趋势（spring/summer/autumn/winter）',
+    null, '{"task_id":"...","results":[{"trend_data":{"trending_colors":["Lavender",...],...}}]}')}
+  ${apiSection('POST', '/api/v1/tasks/launch?article_id={id}&season={season}', '新品上架', 'Data + Marketing Agent 协作完成新品上架工作流',
+    null, '{"task_id":"...","results":[{"trend_data":...},{"selected_copy":"...","all_variants":{...}}]}')}
+  ${apiSection('GET', '/api/v1/skills?level={L1|L2}&tag={tag}', '技能列表', '列出已注册的 MCP 技能，可按 level 或 tag 过滤',
+    null, '{"total":8,"skills":[{"name":"查询库存","description":"...","tags":["库存","ERP"],"level":"L1"},...]}')}
+  ${apiSection('GET', '/api/v1/skills/search?q={keyword}', '技能搜索', '通过关键词语义搜索技能（匹配 name, description, tags, examples）',
+    null, '{"query":"库存","total":3,"skills":[...]}')}
+  ${apiSection('GET', '/api/v1/data/articles', '商品目录', '获取所有 SKU 列表', null, '{"total":20,"articles":[...]}')}
+  ${apiSection('GET', '/api/v1/data/articles/{article_id}', '商品详情', '获取单个商品 + 库存 + 交易', null, '{"article":{...},"inventory":[...],"transactions":[...]}')}
+  ${apiSection('GET', '/api/v1/data/inventory', '库存列表', '获取所有仓库库存记录', null, '{"total":26,"records":[...]}')}
+  ${apiSection('GET', '/api/v1/data/inventory/low-stock', '低库存预警', '获取低于最低库存线的商品', null, '{"total":3,"items":[...]}')}
+  ${apiSection('GET', '/api/v1/data/transactions', '交易记录', '获取所有交易数据', null, '{"total":30,"transactions":[...]}')}
+  ${apiSection('GET', '/api/v1/data/customers', '客户数据', '获取客户画像', null, '{"total":15,"customers":[...]}')}
+  ${apiSection('GET', '/api/v1/data/suppliers', '供应商列表', '获取供应商信息', null, '{"total":6,"suppliers":[...]}')}
+  `;
+}
+
+function apiSection(method, path, title, desc, reqBody, resBody) {
+  const methodColor = method === 'GET' ? 'var(--green)' : method === 'POST' ? 'var(--blue)' : 'var(--orange)';
+  return `
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+      <span style="background:${methodColor};color:var(--bg);padding:2px 10px;border-radius:4px;font-size:12px;font-weight:700">${method}</span>
+      <code style="font-size:14px;color:var(--accent2)">${path}</code>
+    </div>
+    <div class="card-title" style="font-size:16px">${title}</div>
+    <div class="card-desc">${desc}</div>
+    ${reqBody ? `<div style="margin-bottom:12px"><span style="font-size:12px;color:var(--text2);font-weight:500">Request Body</span><pre style="background:var(--bg);padding:12px;border-radius:8px;font-size:12px;margin-top:4px;overflow-x:auto">${reqBody}</pre></div>` : ''}
+    <div><span style="font-size:12px;color:var(--text2);font-weight:500">Response</span><pre style="background:var(--bg);padding:12px;border-radius:8px;font-size:12px;margin-top:4px;overflow-x:auto">${resBody}</pre></div>
+  </div>`;
+}
+
+// ── Init ────────────────────────────────────────────────────
+checkHealth();
+setInterval(checkHealth, 30000);
+</script>
+</body>
+</html>
