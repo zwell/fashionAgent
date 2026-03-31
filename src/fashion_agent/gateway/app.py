@@ -25,6 +25,7 @@ from fashion_agent.gateway.routes.memory import router as memory_router
 from fashion_agent.gateway.routes.skills import router as skills_router
 from fashion_agent.gateway.routes.tasks import router as tasks_router
 from fashion_agent.skills.loader import register_all_skills
+from fashion_agent.tracing.langsmith import configure_tracing
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -36,6 +37,7 @@ async def lifespan(app: FastAPI):
     setup_logging()
     logger.info("starting_fashion_agent")
 
+    configure_tracing()
     register_all_skills()
     logger.info("skills_registered")
 

@@ -19,6 +19,7 @@ from fashion_agent.memory.manager import MemoryManager
 from fashion_agent.orchestrator.state import AgentState
 from fashion_agent.orchestrator.workflows.new_product import NewProductWorkflow
 from fashion_agent.skills.registry import SkillRegistry
+from fashion_agent.tracing.langsmith import get_langsmith_callback
 
 logger = get_logger(__name__)
 
@@ -217,7 +218,9 @@ class MasterAgent:
             "status": TaskStatus.RUNNING,
         })
 
-        result = await self._graph.ainvoke(initial_state)
+        callbacks = get_langsmith_callback()
+        config = {"callbacks": callbacks} if callbacks else {}
+        result = await self._graph.ainvoke(initial_state, config=config)
 
         await self.memory.save_task_context(task_id, {
             "task_type": task_type,

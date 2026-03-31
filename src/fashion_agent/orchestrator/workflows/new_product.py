@@ -26,6 +26,7 @@ from fashion_agent.agents.visual_agent import VisualAgent
 from fashion_agent.core.logging import get_logger
 from fashion_agent.memory.manager import MemoryManager
 from fashion_agent.skills.registry import SkillRegistry
+from fashion_agent.tracing.langsmith import get_langsmith_callback
 
 logger = get_logger(__name__)
 
@@ -275,7 +276,9 @@ class NewProductWorkflow:
             "messages": [],
         }
 
-        result = await self._graph.ainvoke(initial)
+        callbacks = get_langsmith_callback()
+        config = {"callbacks": callbacks} if callbacks else {}
+        result = await self._graph.ainvoke(initial, config=config)
 
         return {
             "task_id": task_id,

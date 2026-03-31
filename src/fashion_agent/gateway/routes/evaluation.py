@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
+from fashion_agent.evaluation.ragas_eval import ragas_evaluate_task
 from fashion_agent.evaluation.runner import run_evaluation
 from fashion_agent.evaluation.scorer import AgentEvaluator
 from fashion_agent.gateway.dependencies import get_master_agent
@@ -20,7 +21,13 @@ async def run_eval_suite():
 
 @router.post("/eval/score")
 async def score_single(task_type: str, result: dict):
-    """Score a single task result against quality criteria."""
+    """Score a single task result (heuristic)."""
     evaluator = AgentEvaluator()
     report = evaluator.evaluate(task_type, result)
     return report.to_dict()
+
+
+@router.post("/eval/ragas")
+async def ragas_eval(task_type: str, result: dict):
+    """Evaluate with Ragas (LLM-based) when available, heuristic fallback."""
+    return await ragas_evaluate_task(task_type, result)

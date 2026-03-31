@@ -2,11 +2,16 @@
 
 Stores entity relationships as a knowledge graph:
   SKU → Supplier, SKU → Category, SKU → Trend, SKU → Feedback
+
+When Neo4j is connected, every write goes to BOTH the in-memory cache
+AND Neo4j via Cypher. Reads always hit in-memory first (fast path),
+falling back to Neo4j for data not yet cached.
 """
 
 from __future__ import annotations
 
 import asyncio
+import json
 from typing import Any
 
 from fashion_agent.core.logging import get_logger
@@ -29,8 +34,8 @@ async def _port_open(host: str, port: int) -> bool:
 class LongTermMemory:
     """Knowledge graph for SKU lifecycle and entity relationships.
 
-    Production: Neo4j Cypher queries.
-    Dev fallback: in-memory adjacency list.
+    Production: writes go to Neo4j AND in-memory cache.
+    Dev fallback: in-memory adjacency list only.
     """
 
     def __init__(
@@ -73,14 +78,31 @@ class LongTermMemory:
                 await self._driver.close()
             self._driver = None
 
+    @property
+    def is_connected(self) -> bool:
+        return self._driver is not None
+
     async def add_node(
         self, node_id: str, label: str, properties: dict | None = None
     ) -> None:
-        self._nodes[node_id] = {
-            "id": node_id,
-            "label": label,
-            **(properties or {}),
-        }
+        props = properties or {}
+        self._nodes[node_id] = {"id": node_id, "label": label, **props}
+
+        if self._driver:
+            safe_props = {
+                k: (json.dumps(v) if isinstance(v, (list, dict)) else v)
+                for k, v in props.items()
+            }
+            safe_props["id"] = node_id
+            cypher = (
+                f"MERGE (n:{label} {{id: $id}}) "
+                f"SET n += $props"
+            )
+            try:
+                async with self._driver.session() as session:
+                    await session.run(cypher, id=node_id, props=safe_props)
+            except Exception as e:
+                logger.warning("neo4j_write_failed", op="add_node", error=str(e))
 
     async def add_edge(
         self,
@@ -96,8 +118,44 @@ class LongTermMemory:
             **(properties or {}),
         })
 
+        if self._driver:
+            cypher = (
+                "MATCH (a {id: $from_id}), (b {id: $to_id}) "
+                f"MERGE (a)-[r:{relation}]->(b) "
+                "SET r += $props"
+            )
+            try:
+                async with self._driver.session() as session:
+                    await session.run(
+                        cypher,
+                        from_id=from_id,
+                        to_id=to_id,
+                        props=properties or {},
+                    )
+            except Exception as e:
+                logger.warning("neo4j_write_failed", op="add_edge", error=str(e))
+
     async def get_node(self, node_id: str) -> dict | None:
-        return self._nodes.get(node_id)
+        if node_id in self._nodes:
+            return self._nodes[node_id]
+
+        if self._driver:
+            try:
+                async with self._driver.session() as session:
+                    result = await session.run(
+                        "MATCH (n {id: $id}) RETURN n, labels(n) as labels",
+                        id=node_id,
+                    )
+                    record = await result.single()
+                    if record:
+                        node_data = dict(record["n"])
+                        node_data["label"] = record["labels"][0] if record["labels"] else "Unknown"
+                        self._nodes[node_id] = node_data
+                        return node_data
+            except Exception as e:
+                logger.warning("neo4j_read_failed", op="get_node", error=str(e))
+
+        return None
 
     async def get_neighbors(
         self, node_id: str, relation: str | None = None
