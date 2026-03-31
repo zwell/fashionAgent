@@ -16,7 +16,10 @@ from fashion_agent.gateway.dependencies import (
     get_master_agent,
     get_memory,
 )
+from fashion_agent.gateway.middleware.error_handler import ErrorHandlerMiddleware
+from fashion_agent.gateway.middleware.rate_limit import RateLimitMiddleware
 from fashion_agent.gateway.routes.data import router as data_router
+from fashion_agent.gateway.routes.evaluation import router as eval_router
 from fashion_agent.gateway.routes.health import router as health_router
 from fashion_agent.gateway.routes.memory import router as memory_router
 from fashion_agent.gateway.routes.skills import router as skills_router
@@ -77,11 +80,15 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    app.add_middleware(ErrorHandlerMiddleware)
+    app.add_middleware(RateLimitMiddleware, max_concurrent=20, requests_per_second=50)
+
     app.include_router(health_router, tags=["health"])
     app.include_router(tasks_router, prefix="/api/v1", tags=["tasks"])
     app.include_router(skills_router, prefix="/api/v1", tags=["skills"])
     app.include_router(data_router, prefix="/api/v1", tags=["data"])
     app.include_router(memory_router, prefix="/api/v1", tags=["memory"])
+    app.include_router(eval_router, prefix="/api/v1", tags=["evaluation"])
 
     if STATIC_DIR.exists():
         app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")

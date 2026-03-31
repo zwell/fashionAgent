@@ -162,6 +162,8 @@ select { cursor: pointer; }
     <div class="nav-item" data-section="transactions"><span class="nav-icon">💳</span>交易记录</div>
     <div class="nav-item" data-section="customers"><span class="nav-icon">👥</span>客户数据</div>
     <div class="nav-item" data-section="suppliers"><span class="nav-icon">🏭</span>供应商</div>
+    <h3>质量评估</h3>
+    <div class="nav-item" data-section="evaluation"><span class="nav-icon">🎯</span>评估套件</div>
     <h3>文档</h3>
     <div class="nav-item" data-section="apidocs"><span class="nav-icon">📖</span>API 文档</div>
   </nav>
@@ -563,6 +565,16 @@ select { cursor: pointer; }
           <div class="card-title">🏭 供应商</div>
           <div class="card-desc">供应商信息与可靠性评分</div>
           <div id="suppliers-table"></div>
+        </div>
+      </div>
+
+      <!-- ===== 评估套件 ===== -->
+      <div class="section" id="sec-evaluation">
+        <div class="card">
+          <div class="card-title">🎯 质量评估套件</div>
+          <div class="card-desc">端到端评估：对 9 个测试用例执行完整 Agent 任务流程，按多维度评分（Completeness / Success / Copy Quality / Visual Output / Checklist ...）</div>
+          <button class="btn btn-primary" onclick="doEvalSuite()" id="eval-btn">🚀 运行完整评估</button>
+          <div id="eval-result"></div>
         </div>
       </div>
 
@@ -982,6 +994,45 @@ async function doMemStats() {
     h += `</div>`;
     el.innerHTML = h;
   }
+}
+
+// ── Evaluation ──────────────────────────────────────────────
+async function doEvalSuite() {
+  const el = document.getElementById('eval-result');
+  const btn = document.getElementById('eval-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 评估中 (9 个用例)...';
+  el.innerHTML = `<div class="result-panel"><div class="result-header"><span>执行中</span><span class="result-status loading">运行 9 个测试用例...</span></div><div class="result-body" style="text-align:center;padding:32px"><div class="spinner"></div></div></div>`;
+  try {
+    const r = await fetch(BASE + '/api/v1/eval/run', { method: 'POST' });
+    const d = await r.json();
+    let h = `<div class="result-panel"><div class="result-header"><span>评估完成</span><span class="result-status ${d.pass_rate>=0.8?'success':'error'}">${d.passed}/${d.total_cases} 通过 · 均分 ${d.average_score}</span></div><div class="result-body" style="max-height:none">`;
+    h += `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">`;
+    h += `<div class="card" style="text-align:center"><div style="font-size:28px;font-weight:700;color:var(--green)">${(d.pass_rate*100).toFixed(0)}%</div><div style="font-size:12px;color:var(--text2)">通过率</div></div>`;
+    h += `<div class="card" style="text-align:center"><div style="font-size:28px;font-weight:700;color:var(--accent2)">${d.average_score}</div><div style="font-size:12px;color:var(--text2)">平均分</div></div>`;
+    h += `<div class="card" style="text-align:center"><div style="font-size:28px;font-weight:700;color:var(--text)">${d.total_cases}</div><div style="font-size:12px;color:var(--text2)">测试用例</div></div>`;
+    h += `</div>`;
+    (d.reports||[]).forEach(rpt => {
+      const color = rpt.all_passed ? 'var(--green)' : 'var(--red)';
+      h += `<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:8px">`;
+      h += `<div style="display:flex;justify-content:space-between;align-items:center">`;
+      h += `<div><strong>${rpt.name}</strong> <span style="color:var(--text2);font-size:12px">${rpt.task_type}</span></div>`;
+      h += `<div style="display:flex;gap:8px;align-items:center"><span style="color:${color};font-weight:600">${rpt.overall_score}</span><span style="font-size:12px;color:${color}">${rpt.all_passed?'✅ PASS':'❌ FAIL'}</span></div></div>`;
+      h += `<div style="display:flex;gap:4px;margin-top:6px;flex-wrap:wrap">`;
+      (rpt.metrics||[]).forEach(m => {
+        const mc = m.passed ? 'rgba(0,184,148,0.15)' : 'rgba(255,118,117,0.15)';
+        const tc = m.passed ? 'var(--green)' : 'var(--red)';
+        h += `<span style="background:${mc};color:${tc};padding:2px 8px;border-radius:4px;font-size:11px">${m.metric}: ${m.score}</span>`;
+      });
+      h += `</div></div>`;
+    });
+    h += `</div></div>`;
+    el.innerHTML = h;
+  } catch(e) {
+    el.innerHTML = `<div class="result-panel"><div class="result-header"><span>错误</span><span class="result-status error">失败</span></div><div class="result-body"><pre>${e.message}</pre></div></div>`;
+  }
+  btn.disabled = false;
+  btn.textContent = '🚀 运行完整评估';
 }
 
 // ── Data tables ─────────────────────────────────────────────
