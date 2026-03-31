@@ -67,12 +67,12 @@ class TestSkillEndpoints:
     async def test_list_all(self, client: AsyncClient):
         r = await client.get("/api/v1/skills")
         assert r.status_code == 200
-        assert r.json()["total"] >= 8
+        assert r.json()["total"] >= 10
 
     async def test_filter_l1(self, client: AsyncClient):
         r = await client.get("/api/v1/skills?level=L1")
         assert r.status_code == 200
-        assert r.json()["total"] >= 5
+        assert r.json()["total"] >= 7
 
     async def test_filter_l2(self, client: AsyncClient):
         r = await client.get("/api/v1/skills?level=L2")
@@ -113,12 +113,26 @@ class TestTaskEndpoints:
         assert r.status_code == 200
         assert r.json()["status"] == "completed"
 
-    async def test_launch(self, client: AsyncClient):
+    async def test_launch_sop(self, client: AsyncClient):
         r = await client.post(
-            "/api/v1/tasks/launch?article_id=0126589003&season=spring"
+            "/api/v1/tasks/launch?article_id=0126589003&season=spring&category=Dress"
         )
         assert r.status_code == 200
-        assert r.json()["status"] == "completed"
+        d = r.json()
+        assert d["status"] == "completed"
+        assert d["workflow"] == "new_product_sop"
+        assert "design" in d
+        assert "visuals" in d
+        assert "marketing" in d
+
+    async def test_visual(self, client: AsyncClient):
+        r = await client.post(
+            "/api/v1/tasks/visual?article_id=0126589003"
+        )
+        assert r.status_code == 200
+        d = r.json()
+        assert d["success"] is True
+        assert d["total_images"] >= 3
 
     async def test_generic_task(self, client: AsyncClient):
         r = await client.post("/api/v1/tasks", json={

@@ -57,11 +57,19 @@ class TestMasterAgentOrchestration:
         )
         assert result["status"] == "completed"
 
-    async def test_new_product_launch_task(self, master: MasterAgent):
+    async def test_new_product_launch_sop(self, master: MasterAgent):
+        """Test the full SOP workflow: design → parallel visual+marketing → review → aggregate."""
         result = await master.run(
             task_type=TaskType.NEW_PRODUCT_LAUNCH.value,
             instruction="Launch cotton dress for spring",
             params={"article_id": "0126589003", "season": "spring"},
         )
         assert result["status"] == "completed"
-        assert len(result["agents_involved"]) == 2
+        assert result["workflow"] == "new_product_sop"
+        assert "design" in result
+        assert "visuals" in result
+        assert "marketing" in result
+        assert result["visuals"]["total_images"] >= 3
+        assert result["marketing"]["selected_copy"] != ""
+        assert len(result["launch_checklist"]) == 4
+        assert all(c["done"] for c in result["launch_checklist"])

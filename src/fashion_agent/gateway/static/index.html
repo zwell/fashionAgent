@@ -138,11 +138,13 @@ select { cursor: pointer; }
 <div class="container">
   <nav class="sidebar">
     <h3>Agent 任务</h3>
-    <div class="nav-item active" data-section="copywriting"><span class="nav-icon">✍️</span>文案生成</div>
+    <div class="nav-item active" data-section="sop"><span class="nav-icon">🔄</span>自动上新 SOP</div>
+    <div class="nav-item" data-section="design"><span class="nav-icon">🎨</span>设计提案</div>
+    <div class="nav-item" data-section="visual"><span class="nav-icon">📷</span>视觉生成</div>
+    <div class="nav-item" data-section="copywriting"><span class="nav-icon">✍️</span>文案生成</div>
     <div class="nav-item" data-section="restock"><span class="nav-icon">📦</span>智能补货</div>
     <div class="nav-item" data-section="clearance"><span class="nav-icon">🏷️</span>清仓决策</div>
     <div class="nav-item" data-section="trend"><span class="nav-icon">📈</span>趋势分析</div>
-    <div class="nav-item" data-section="launch"><span class="nav-icon">🚀</span>新品上架</div>
     <div class="nav-item" data-section="generic"><span class="nav-icon">🎯</span>通用任务</div>
     <h3>技能中心</h3>
     <div class="nav-item" data-section="skills"><span class="nav-icon">🔧</span>技能列表</div>
@@ -161,8 +163,130 @@ select { cursor: pointer; }
   <div class="main">
     <div class="content">
 
+      <!-- ===== 自动上新 SOP ===== -->
+      <div class="section active" id="sec-sop">
+        <div class="card">
+          <div class="card-title">🔄 自动上新 SOP 工作流</div>
+          <div class="card-desc">完整的新品上架流程：Design Agent → [Visual + Marketing 并行执行] → 人工审核 → 发布</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:20px;font-size:13px;color:var(--text2);line-height:2">
+            <strong style="color:var(--text)">工作流程图</strong><br>
+            <code style="color:var(--accent2)">① Design Agent (CoT)</code> → 生成设计提案<br>
+            <code style="color:var(--blue)">② Visual Agent (ReAct)</code> + <code style="color:var(--pink)">Marketing Agent (ToT)</code> — <strong style="color:var(--orange)">并行执行</strong><br>
+            <code style="color:var(--green)">③ 审核节点</code> → 自动/人工审核<br>
+            <code style="color:var(--text)">④ 聚合输出</code> → 完整上架包
+          </div>
+          <div class="grid-2">
+            <div>
+              <div class="form-group">
+                <label>选择商品</label>
+                <select id="sop-article" class="article-select"></select>
+              </div>
+              <div class="form-group">
+                <label>品类</label>
+                <select id="sop-category">
+                  <option value="Dress">Dress 连衣裙</option>
+                  <option value="T-shirt">T-shirt T恤</option>
+                  <option value="Jacket">Jacket 夹克</option>
+                  <option value="Coat">Coat 大衣</option>
+                  <option value="Hoodie">Hoodie 卫衣</option>
+                  <option value="Blazer">Blazer 西装</option>
+                  <option value="Sweater">Sweater 毛衣</option>
+                  <option value="Trousers">Trousers 裤子</option>
+                  <option value="Skirt">Skirt 半裙</option>
+                  <option value="Blouse">Blouse 衬衫</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>目标季节</label>
+                <select id="sop-season">
+                  <option value="spring">🌸 春季</option>
+                  <option value="summer">☀️ 夏季</option>
+                  <option value="autumn">🍂 秋季</option>
+                  <option value="winter">❄️ 冬季</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" onclick="doSOP()">🔄 启动上新流程</button>
+            </div>
+            <div id="sop-checklist" style="display:none">
+              <label style="font-size:13px;color:var(--text2);margin-bottom:8px;display:block">上架清单</label>
+              <div id="sop-checklist-items"></div>
+            </div>
+          </div>
+          <div id="sop-result"></div>
+        </div>
+      </div>
+
+      <!-- ===== 设计提案 ===== -->
+      <div class="section" id="sec-design">
+        <div class="card">
+          <div class="card-title">🎨 设计提案</div>
+          <div class="card-desc">Design Agent (CoT) — 基于时尚趋势和参考商品，生成新品设计方案（色彩/材质/版型/细节）</div>
+          <div class="grid-2">
+            <div>
+              <div class="form-group">
+                <label>品类</label>
+                <select id="design-category">
+                  <option value="Dress">Dress 连衣裙</option>
+                  <option value="T-shirt">T-shirt T恤</option>
+                  <option value="Jacket">Jacket 夹克</option>
+                  <option value="Coat">Coat 大衣</option>
+                  <option value="Hoodie">Hoodie 卫衣</option>
+                  <option value="Blazer">Blazer 西装</option>
+                  <option value="Sweater">Sweater 毛衣</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>目标季节</label>
+                <select id="design-season">
+                  <option value="spring">🌸 春季</option>
+                  <option value="summer">☀️ 夏季</option>
+                  <option value="autumn">🍂 秋季</option>
+                  <option value="winter">❄️ 冬季</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>参考商品 (可选)</label>
+                <select id="design-ref"><option value="">无参考</option></select>
+              </div>
+              <button class="btn btn-primary" onclick="doDesign()">🎨 生成设计</button>
+            </div>
+            <div id="design-preview" style="display:none">
+              <label style="font-size:13px;color:var(--text2);margin-bottom:8px;display:block">设计描述</label>
+              <div class="copy-display" id="design-text"></div>
+            </div>
+          </div>
+          <div id="design-result"></div>
+        </div>
+      </div>
+
+      <!-- ===== 视觉生成 ===== -->
+      <div class="section" id="sec-visual">
+        <div class="card">
+          <div class="card-title">📷 视觉生成</div>
+          <div class="card-desc">Visual Agent (ReAct) — 观察商品信息 → 制定拍摄策略 → 生成商品图/模特图/场景图 → 质量评估</div>
+          <div class="grid-2">
+            <div>
+              <div class="form-group">
+                <label>选择商品</label>
+                <select id="visual-article" class="article-select"></select>
+              </div>
+              <div class="form-group">
+                <label>拍摄风格</label>
+                <select id="visual-style">
+                  <option value="commercial">Commercial 商业</option>
+                  <option value="editorial">Editorial 编辑</option>
+                  <option value="minimalist">Minimalist 极简</option>
+                </select>
+              </div>
+              <button class="btn btn-primary" onclick="doVisual()">📷 生成图片</button>
+            </div>
+          </div>
+          <div id="visual-result"></div>
+        </div>
+      </div>
+
       <!-- ===== 文案生成 ===== -->
-      <div class="section active" id="sec-copywriting">
+      <div class="section" id="sec-copywriting">
         <div class="card">
           <div class="card-title">✍️ 文案生成</div>
           <div class="card-desc">Marketing Agent (ToT) — 为商品生成多种风格的文案，选择最优输出</div>
@@ -246,32 +370,7 @@ select { cursor: pointer; }
         </div>
       </div>
 
-      <!-- ===== 新品上架 ===== -->
-      <div class="section" id="sec-launch">
-        <div class="card">
-          <div class="card-title">🚀 新品上架</div>
-          <div class="card-desc">Data + Marketing Agent — 趋势匹配分析 + 自动生成商品描述与社交媒体文案</div>
-          <div class="grid-2">
-            <div>
-              <div class="form-group">
-                <label>选择商品</label>
-                <select id="launch-article" class="article-select"></select>
-              </div>
-              <div class="form-group">
-                <label>上架季节</label>
-                <select id="launch-season">
-                  <option value="spring">🌸 春季</option>
-                  <option value="summer">☀️ 夏季</option>
-                  <option value="autumn">🍂 秋季</option>
-                  <option value="winter">❄️ 冬季</option>
-                </select>
-              </div>
-              <button class="btn btn-primary" onclick="doLaunch()">🚀 启动上架</button>
-            </div>
-          </div>
-          <div id="launch-result"></div>
-        </div>
-      </div>
+      <!-- launch section replaced by SOP workflow above -->
 
       <!-- ===== 通用任务 ===== -->
       <div class="section" id="sec-generic">
@@ -503,7 +602,54 @@ async function apiCall(method, url, body, resultId) {
   }
 }
 
-// ── Task handlers ───────────────────────────────────────────
+// ── Phase 2 task handlers ───────────────────────────────────
+async function doSOP() {
+  const aid = document.getElementById('sop-article').value;
+  const cat = document.getElementById('sop-category').value;
+  const season = document.getElementById('sop-season').value;
+  const d = await apiCall('POST', `/api/v1/tasks/launch?article_id=${aid}&season=${season}&category=${cat}`, null, 'sop-result');
+  if (d && d.launch_checklist) {
+    document.getElementById('sop-checklist').style.display = '';
+    document.getElementById('sop-checklist-items').innerHTML = d.launch_checklist.map(c =>
+      `<div style="padding:6px 0;display:flex;align-items:center;gap:8px">
+        <span style="color:${c.done?'var(--green)':'var(--red)'}">${c.done?'✅':'⬜'}</span>
+        <span>${c.item}</span>
+      </div>`
+    ).join('');
+  }
+}
+
+async function doDesign() {
+  const cat = document.getElementById('design-category').value;
+  const season = document.getElementById('design-season').value;
+  const ref = document.getElementById('design-ref').value;
+  let url = `/api/v1/tasks/design?category=${cat}&season=${season}`;
+  if (ref) url += `&article_id=${ref}`;
+  const d = await apiCall('POST', url, null, 'design-result');
+  if (d && d.results && d.results[0] && d.results[0].design_description) {
+    document.getElementById('design-preview').style.display = '';
+    document.getElementById('design-text').textContent = d.results[0].design_description;
+  }
+}
+
+async function doVisual() {
+  const aid = document.getElementById('visual-article').value;
+  const style = document.getElementById('visual-style').value;
+  await apiCall('POST', `/api/v1/tasks/visual?article_id=${aid}&image_style=${style}`, null, 'visual-result');
+}
+
+// Populate design ref dropdown
+const designRef = document.getElementById('design-ref');
+if (designRef) {
+  ARTICLES.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.id;
+    opt.textContent = `${a.id} · ${a.name} (${a.color})`;
+    designRef.appendChild(opt);
+  });
+}
+
+// ── Phase 1 task handlers ───────────────────────────────────
 async function doCopywriting() {
   const aid = document.getElementById('copy-article').value;
   const style = document.getElementById('copy-style').value;
@@ -528,12 +674,6 @@ async function doClearance() {
 async function doTrend() {
   const season = document.getElementById('trend-season').value;
   await apiCall('POST', `/api/v1/tasks/trend?season=${season}`, null, 'trend-result');
-}
-
-async function doLaunch() {
-  const aid = document.getElementById('launch-article').value;
-  const season = document.getElementById('launch-season').value;
-  await apiCall('POST', `/api/v1/tasks/launch?article_id=${aid}&season=${season}`, null, 'launch-result');
 }
 
 async function doGeneric() {

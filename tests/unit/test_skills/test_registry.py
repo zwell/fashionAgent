@@ -12,13 +12,13 @@ class TestSkillRegistry:
     def test_skills_are_registered(self):
         registry = get_registry()
         all_skills = registry.list_skills()
-        assert len(all_skills) >= 5  # at least 5 L1 skills
+        assert len(all_skills) >= 10
 
     def test_filter_by_level(self):
         registry = get_registry()
         l1 = registry.list_skills(level="L1")
         l2 = registry.list_skills(level="L2")
-        assert len(l1) >= 5
+        assert len(l1) >= 7
         assert len(l2) >= 3
 
     def test_filter_by_tag(self):
@@ -45,7 +45,7 @@ class TestSkillRegistry:
     def test_tool_schemas(self):
         registry = get_registry()
         schemas = registry.to_tool_schemas()
-        assert len(schemas) >= 5
+        assert len(schemas) >= 10
         for schema in schemas:
             assert "name" in schema
             assert "description" in schema
