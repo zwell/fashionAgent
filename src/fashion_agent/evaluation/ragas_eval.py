@@ -1,7 +1,8 @@
 """Ragas integration for LLM-based evaluation.
 
-When an OpenAI API key is configured, uses Ragas metrics (faithfulness,
-answer relevancy, etc.) for deep quality evaluation.
+When an OpenAI-compatible API key is configured (OpenAI / DeepSeek / Qwen
+compatible mode, etc.), uses Ragas metrics (faithfulness, answer relevancy,
+etc.) for deep quality evaluation.
 
 When no LLM is available, falls back to the heuristic scorer.
 """
@@ -19,7 +20,7 @@ logger = get_logger(__name__)
 
 def _ragas_available() -> bool:
     settings = get_settings()
-    if not settings.has_openai:
+    if not settings.has_llm:
         return False
     try:
         import ragas  # noqa: F401
@@ -40,13 +41,16 @@ async def ragas_evaluate_copywriting(
       - answer_relevancy: is the copy relevant to the instruction?
     """
     if not _ragas_available():
-        logger.info("ragas_not_available", reason="no OpenAI key or ragas not installed")
+        logger.info("ragas_not_available", reason="no LLM key or ragas not installed")
         return _heuristic_copy_eval(instruction, generated_copy, article_context)
 
     try:
         from datasets import Dataset
         from ragas import evaluate
+        from ragas.llms import llm_factory
         from ragas.metrics import answer_relevancy, faithfulness
+
+        from fashion_agent.core.llm import get_openai_compatible_client
 
         dataset = Dataset.from_dict({
             "question": [instruction],
@@ -54,7 +58,21 @@ async def ragas_evaluate_copywriting(
             "contexts": [[article_context]],
         })
 
-        result = evaluate(dataset, metrics=[faithfulness, answer_relevancy])
+        settings = get_settings()
+        client = get_openai_compatible_client()
+        if client is None:
+            return _heuristic_copy_eval(instruction, generated_copy, article_context)
+
+        ragas_llm = llm_factory(
+            settings.openai_model,
+            provider="openai",
+            client=client,
+        )
+        result = evaluate(
+            dataset,
+            metrics=[faithfulness, answer_relevancy],
+            llm=ragas_llm,
+        )
         scores = result.to_pandas().iloc[0].to_dict()
 
         return {
