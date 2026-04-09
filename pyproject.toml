@@ -23,7 +23,9 @@ dependencies = [
     "structlog>=24.0",
     "faker>=30.0",
     "pandas>=2.0",
-    "pymilvus>=2.4.0",
+    # pymilvus 明示排除多個有問題的 grpcio 版本；1.73.x 在 Windows + Docker 上常導致 gRPC 握手超時
+    "grpcio>=1.64.2,<1.68.0",
+    "pymilvus>=2.5.4,<2.6",
     "neo4j>=5.0",
 ]
 

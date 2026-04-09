@@ -32,9 +32,14 @@ class Settings(BaseSettings):
     # Redis
     redis_url: str = "redis://localhost:6379/0"
 
-    # Milvus
+    # Milvus — 可设 MILVUS_URI 覆盖 host/port（例如 Docker 网络下的 http://milvus:19530）
     milvus_host: str = "localhost"
     milvus_port: int = 19530
+    milvus_uri: str = ""
+    # gRPC 建连等待（秒）。/healthz 在 9091，与 19530 gRPC 无关；Docker/冷启动可适当加大
+    milvus_connect_timeout: float = 45.0
+    # 连接 Milvus 前把本机 loopback 加入 NO_PROXY（避免系统代理「碰」到 127.0.0.1 的 gRPC）
+    milvus_extend_no_proxy: bool = True
 
     # Neo4j
     neo4j_uri: str = "bolt://localhost:7687"

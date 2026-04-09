@@ -1,5 +1,9 @@
 """Seed all memory layers with data from the seed JSON files.
 
+Milvus: create collection ``sku_embeddings`` first if needed::
+
+    python scripts/init_milvus_collection.py
+
 Usage:
     python scripts/seed_memory.py
 """

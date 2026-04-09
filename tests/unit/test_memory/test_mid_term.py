@@ -9,7 +9,11 @@ from fashion_agent.memory.mid_term import MidTermMemory
 
 @pytest.fixture
 async def mem():
-    m = MidTermMemory(milvus_host="localhost", milvus_port=19530)
+    m = MidTermMemory(
+        milvus_host="localhost",
+        milvus_port=19530,
+        connect_timeout=5.0,
+    )
     await m.connect()
     yield m
     await m.close()

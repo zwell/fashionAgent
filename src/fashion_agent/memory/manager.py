@@ -27,6 +27,9 @@ class MemoryManager:
         self.mid_term = MidTermMemory(
             milvus_host=settings.milvus_host,
             milvus_port=settings.milvus_port,
+            milvus_uri=(settings.milvus_uri or None),
+            connect_timeout=settings.milvus_connect_timeout,
+            extend_no_proxy=settings.milvus_extend_no_proxy,
         )
         self.long_term = LongTermMemory(
             neo4j_uri=settings.neo4j_uri,
