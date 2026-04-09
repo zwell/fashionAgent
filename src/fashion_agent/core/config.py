@@ -31,6 +31,7 @@ class Settings(BaseSettings):
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"
+    memory_backend: Literal["legacy", "zep"] = "legacy"
 
     # Milvus — 可设 MILVUS_URI 覆盖 host/port（例如 Docker 网络下的 http://milvus:19530）
     milvus_host: str = "localhost"
@@ -45,6 +46,12 @@ class Settings(BaseSettings):
     neo4j_uri: str = "bolt://localhost:7687"
     neo4j_user: str = "neo4j"
     neo4j_password: str = "password"
+
+    # Zep Cloud
+    zep_api_key: str = ""
+    zep_public_graph_id: str = "fashion-public"
+    zep_default_user_id: str = "fashion-agent"
+    zep_timeout_seconds: float = 20.0
 
     # LangSmith
     langsmith_api_key: str = ""
@@ -65,6 +72,13 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return v.strip().lower()
         return str(v) if v is not None else "openai"
+
+    @field_validator("memory_backend", mode="before")
+    @classmethod
+    def _normalize_memory_backend(cls, v: object) -> str:
+        if isinstance(v, str):
+            return v.strip().lower()
+        return str(v) if v is not None else "legacy"
 
     @property
     def resolved_openai_api_base(self) -> str | None:
@@ -91,6 +105,10 @@ class Settings(BaseSettings):
     @property
     def has_langsmith(self) -> bool:
         return bool(self.langsmith_api_key and self.langsmith_api_key != "ls-xxx")
+
+    @property
+    def has_zep(self) -> bool:
+        return bool(self.zep_api_key and self.zep_api_key != "zep_xxx")
 
 
 @lru_cache

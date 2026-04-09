@@ -8,7 +8,7 @@
 
 - **LangGraph StateGraph 编排**：Master Agent 状态机驱动的多 Agent 任务分发
 - **MCP 技能注册中心**：L1 原子技能 + L2 组合技能，语义化封装 + 自然语言搜索
-- **三层混合记忆**：Redis（短期）+ Milvus（中期向量）+ Neo4j（长期图谱）
+- **三层混合记忆**：Redis（短期）+ 可切换中长期后端（Milvus+Neo4j 或 Zep+Graphiti）
 - **全链路追踪**：LangSmith 集成，每步 CoT 可监控
 - **FastAPI 异步网关**：高并发任务处理 + WebSocket 实时推送
 - **真实数据支撑**：基于 H&M 数据集 schema（105K SKU, 31M 交易），内置种子数据开箱即用
@@ -28,6 +28,30 @@ uvicorn fashion_agent.gateway.app:app --reload
 # Start with Docker (Redis)
 docker-compose up -d
 uvicorn fashion_agent.gateway.app:app --reload
+```
+
+## Memory Backend Switch
+
+Use `.env` to switch mid/long memory backend:
+
+```env
+# Legacy: Milvus + Neo4j
+MEMORY_BACKEND=legacy
+
+# Zep(Graphiti) cloud mode
+# MEMORY_BACKEND=zep
+# ZEP_API_KEY=...
+# ZEP_PUBLIC_GRAPH_ID=fashion-public
+# ZEP_DEFAULT_USER_ID=fashion-agent
+```
+
+`ZEP_PUBLIC_GRAPH_ID` stores shared business knowledge (products/suppliers/rules),
+while user-scoped memory stays under user graphs.
+
+For Zep connectivity check:
+
+```bash
+python scripts/init_zep_graphiti.py
 ```
 
 ## API Endpoints
@@ -61,8 +85,8 @@ FastAPI Gateway
                     │
             Memory Manager
             ├── Redis (short-term sessions)
-            ├── Milvus (mid-term vectors) [Phase 3]
-            └── Neo4j (long-term graph) [Phase 3]
+            ├── Milvus + Neo4j (legacy backend)
+            └── Zep + Graphiti (cloud backend)
 ```
 
 ## Dataset

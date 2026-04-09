@@ -1,8 +1,12 @@
 """Seed all memory layers with data from the seed JSON files.
 
-Milvus: create collection ``sku_embeddings`` first if needed::
+Legacy backend (Milvus/Neo4j): create collection first if needed::
 
     python scripts/init_milvus_collection.py
+
+Zep backend: validate service/auth first::
+
+    python scripts/init_zep_graphiti.py
 
 Usage:
     python scripts/seed_memory.py
@@ -12,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 
+from fashion_agent.core.config import get_settings
 from fashion_agent.core.data_loader import load_articles, load_suppliers
 from fashion_agent.core.logging import setup_logging
 from fashion_agent.memory.entity import EntityMemory
@@ -22,6 +27,7 @@ from fashion_agent.skills.loader import register_all_skills
 async def main() -> None:
     setup_logging()
     register_all_skills()
+    settings = get_settings()
 
     mm = MemoryManager()
     await mm.initialize()
@@ -30,6 +36,7 @@ async def main() -> None:
     articles = load_articles()
     suppliers = load_suppliers()
 
+    print(f"Memory backend: {settings.memory_backend}")
     print(f"Seeding {len(articles)} articles into memory layers...")
 
     for sup in suppliers:
@@ -46,7 +53,7 @@ async def main() -> None:
         print(f"  [{i}/{len(articles)}] {article.article_id} {article.prod_name} — {status}")
 
     stats = await mm.get_memory_stats()
-    print(f"\nMemory stats:")
+    print("\nMemory stats:")
     print(f"  Vectors: {stats['mid_term']['vectors_stored']}")
     print(f"  Graph nodes: {stats['long_term']['total_nodes']}")
     print(f"  Graph edges: {stats['long_term']['total_edges']}")
